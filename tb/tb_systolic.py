@@ -1,7 +1,7 @@
 # tb/tb_systolic.py : NxN 脉动阵列测试 (自适应 4x4 / 8x8)
 #   顶层: systolic_4x4 (c_00..c_33 拍平接口) 或 systolic_8x8 (c_flat 接口)
 #   skew 由本驱动端完成: 行 i 在第 (i+k) 拍放 A[i][k], 列 j 在第 (j+k) 拍放 B[k][j]
-#   覆盖: V01 零矩阵 / V04 K 部分归约 / en 门控 / V09 连续任务 / V10 中途复位
+#   覆盖: V01 零矩阵 / V04 K 部分归约 / en 门控(对称+非对称) / V09 连续任务 / V10 中途复位
 import math
 import os
 import random
@@ -63,6 +63,28 @@ async def drive_cycle(dut, n, A, B, cycle, en_on=True, garbage=None, k_limit=Non
     await Timer(1, unit="step")
 
 
+async def drive_cycle_asym(dut, n, A, B, cycle, a_on, b_on, garbage):
+    """A/B 通道独立 en 控制的斜排喂数 (测试单通道门控)"""
+    for i in range(n):
+        k = cycle - i
+        if 0 <= k < n and a_on:
+            dut.a_row[i].value = A[i][k]
+            dut.en_a[i].value = 1
+        else:
+            dut.a_row[i].value = garbage(i, k, cycle)
+            dut.en_a[i].value = 0
+    for j in range(n):
+        k = cycle - j
+        if 0 <= k < n and b_on:
+            dut.b_col[j].value = B[k][j]
+            dut.en_b[j].value = 1
+        else:
+            dut.b_col[j].value = garbage(j, k, cycle)
+            dut.en_b[j].value = 0
+    await RisingEdge(dut.clk)
+    await Timer(1, unit="step")
+
+
 def read_c(dut, n):
     """读回 NxN 结果 (适配 c_flat 与 c_ij 两种接口)"""
     C = [[0] * n for _ in range(n)]
@@ -72,7 +94,7 @@ def read_c(dut, n):
                 v = dut.c_flat[i * n + j].value
             else:
                 v = getattr(dut, f"c_{i}{j}").value
-            C[i][j] = v.signed_integer
+            C[i][j] = v.to_signed()
     return C
 
 
@@ -124,6 +146,32 @@ async def test_zero_matrix(dut):
     got = await run_matmul(dut, n, Z, Z)
     fails = compare(dut, got, matmul_ref(Z, Z), "ZxZ")
     assert fails == 0, f"{fails} mismatches in zero matrix test"
+
+
+@cocotb.test()
+async def test_en_asym(dut):
+    """en 单通道门控: A有效B无效 / B有效A无效, acc 均保持 0
+    (PE 必须 en_a&&en_b 同时有效才累加, 覆盖 &&->en_a/en_b 类故障)"""
+    n = detect_n(dut)
+    clock = Clock(dut.clk, 10, unit="ns")
+    cocotb.start_soon(clock.start())
+    await reset_dut(dut, n)
+    A = rand_mat(n, 51)
+    B = rand_mat(n, 52)
+
+    def garbage(idx, k, cycle):
+        return (0x47 + 7 * idx + cycle) % 126 + 1   # 恒非零
+
+    async def drive_asym(a_on, b_on):
+        for cycle in range(2 * n):
+            await drive_cycle_asym(dut, n, A, B, cycle, a_on, b_on, garbage)
+
+    zero = [[0] * n for _ in range(n)]
+    await drive_asym(True, False)    # 相位1: A 有效, B 无效(垃圾数据)
+    fails = compare(dut, read_c(dut, n), zero, "en-asym(A on)")
+    await drive_asym(False, True)    # 相位2: A 无效(垃圾数据), B 有效
+    fails += compare(dut, read_c(dut, n), zero, "en-asym(B on)")
+    assert fails == 0, f"{fails} mismatches in en-asym test"
 
 
 @cocotb.test()

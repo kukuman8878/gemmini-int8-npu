@@ -30,7 +30,7 @@ async def do_mac(dut, a, b, acc, en):
     dut.en.value = en
     await RisingEdge(dut.clk)
     await Timer(1, unit="step")
-    return dut.acc_out.value.signed_integer    # 按有符号解读 32 位结果
+    return dut.acc_out.value.to_signed()    # 按有符号解读 32 位结果
 
 
 @cocotb.test()
