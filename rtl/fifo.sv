@@ -1,9 +1,10 @@
 // =============================================================
 // fifo : synchronous FIFO, WIDTH x DEPTH, parameterized
+//   限制: DEPTH 必须为 2 的幂且 >= 2 (计数器法判满空; DEPTH=1 地址位宽非法)
 // =============================================================
 module fifo #(
     parameter WIDTH = 8,        // 数据位宽
-    parameter DEPTH = 16        // FIFO 深度 (必须为 2 的幂)
+    parameter DEPTH = 16        // FIFO 深度 (必须为 2 的幂, >= 2)
 ) (
     input  wire        clk, //时钟，每跳变一次电路"走一步"
     input  wire        rst_n,  //复位（低电平有效）
@@ -29,7 +30,7 @@ always @(posedge clk or negedge rst_n) begin
         wr_ptr <= {ADDRW{1'b0}};
     end else if (wr_en && !full) begin
         mem[wr_ptr] <= wr_data;          // 写数据到当前写指针位置
-        wr_ptr      <= wr_ptr + 1'b1;    // 写指针 +1 (3位自动回绕 7->0)
+        wr_ptr      <= wr_ptr + 1'b1;    // 写指针 +1 (ADDRW 位自动回绕)
     end
 end
 

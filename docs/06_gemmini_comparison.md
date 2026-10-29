@@ -6,9 +6,10 @@
 
 | 项目 | 值 |
 |:---|:---|
-| 仓库 | `../gemmini-ref`（Gemmini 官方） |
-| commit | 待固定（记录在 `gemmini_baseline/README.md`） |
-| Chipyard 子模块 | 待记录 commit |
+| 仓库 | `../gemmini-ref`（clone 自 https://github.com/ucb-bar/gemmini） |
+| Gemmini commit | `8c3f9923a44a2fe2c7930587be297d6d4f8c09ca`（2025-09-01，PR #392 merge） |
+| CHIPYARD.hash | `e02074414158c85059c1dcb231ff2f8941254b9a`（Chipyard 子模块**尚未 clone**） |
+| 子模块 | gemmini-rocc-tests / libgemmini / onnxruntime-riscv（未拉取） |
 | 构建环境 | 待记录（build-setup.sh 版本、工具链） |
 
 ## 2. 官方基线任务（计划）

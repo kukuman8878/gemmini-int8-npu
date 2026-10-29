@@ -13,7 +13,8 @@
 | 位宽 | A/B = signed 8bit；乘积 = signed 16bit；累加 = signed 32bit | 已定 |
 | K 范围 | 1…256（单 tile 归约长度） | 已定 |
 | skew 归属 | 左/上边界错位由 `input_skew.sv` **或** 测试驱动完成，二者只能取其一 | 已定契约；当前实现（周练习 TB）由驱动端完成，W4 迁移到 `input_skew.sv` |
-| 无效数据 | 无效拍（en=0）不得更新累加器；停顿期间逻辑拍不前进 | 已定 |
+| 无效数据 | 无效拍（en=0）不得更新累加器 | 已定（当前 PE 实现：en=0 仅门控 acc，流水寄存器照常移位） |
+| 停顿语义 | 停顿/反压期间是否冻结整条流水 | **TODO-决策**（当前 PE 不冻结流水；W5 controller 引入背压时一并定义，可选 recirculation 或时钟门控） |
 
 ## 2. 模块端口（当前导入基线）
 
@@ -50,7 +51,7 @@ module pe (
 ### 2.3 systolic_array.sv（已实现，参数化 N×N）
 
 ```systemverilog
-module systolic #(parameter N = 4) (
+module systolic_array #(parameter N = 4) (
   input  wire clk, rst_n,
   input  wire signed [7:0] a_row [0:N-1], b_col [0:N-1],
   input  wire        en_a  [0:N-1], en_b  [0:N-1],
@@ -61,11 +62,12 @@ module systolic #(parameter N = 4) (
 - 边界注入：`a_row[i]`/`en_a[i]` 接第 i 行左边界；`b_col[j]`/`en_b[j]` 接第 j 列上边界。
 - 时序：N×N×N 单 tile 满速流水时，结果在 `3N-2` 拍后全部就绪（4×4 为 10 拍）。
 - skew 由外部（驱动或 input_skew）完成：A 第 i 行延迟 i 拍、B 第 j 列延迟 j 拍。
+- 薄包装实例：`systolic_4x4`（N=4，c_ij 拍平输出）、`systolic_8x8`（N=8，c_flat 输出），无重复逻辑。
 
 ### 2.4 fifo.sv（已实现，接口待收紧）
 
 ```systemverilog
-module sync_fifo #(parameter WIDTH = 8, DEPTH = 16) (
+module fifo #(parameter WIDTH = 8, DEPTH = 16) (
   input  wire clk, rst_n, wr_en, rd_en,
   input  wire [WIDTH-1:0] wr_data,
   output reg  [WIDTH-1:0] rd_data,
@@ -73,7 +75,7 @@ module sync_fifo #(parameter WIDTH = 8, DEPTH = 16) (
 );
 ```
 
-- DEPTH 必须为 2 的幂（计数器法判满空）。
+- DEPTH 必须为 2 的幂且 ≥ 2（计数器法判满空；DEPTH=1 会使地址位宽非法，不支持）。
 - 当前接口为 `wr_en/rd_en`；**W5 收紧为 valid/ready 或新增 wrapper**（TODO-决策：改内核 vs 加 adapter）。
 
 ## 3. 顶层握手契约（npu_top，W6 目标，草案）
@@ -88,7 +90,7 @@ module sync_fifo #(parameter WIDTH = 8, DEPTH = 16) (
 
 **必须显式回答的语义问题（实现前逐条写死并加测试）**：
 
-1. 复位时是否清除 FIFO？（默认：是）
+1. 复位时是否清除 FIFO？（默认：是——逻辑清空。实现上复位只清指针/计数器，存储阵列内容不清，但 empty 门控读使旧数据不可见，语义等价；FIFO 深度参数变更时不影响该结论）
 2. `start`/`cfg` 在 busy 状态是否接受？（默认：拒绝或丢弃，由验证用例 V11 锁定行为）
 3. 输出等待期间（out_ready=0）能否启动下一任务？（默认：不允许，单任务在途）
 4. skew 由谁完成？（见 §1，W4 迁移至 input_skew.sv）

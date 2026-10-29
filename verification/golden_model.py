@@ -1,4 +1,4 @@
-# sim/golden_model.py : MAC 的黄金模型 (纯 Python)
+# verification/golden_model.py : MAC 的黄金模型 (纯 Python)
 # Python 整数天然支持任意精度有符号运算, 无需处理补码/符号扩展 —— 完美的"真理"
 
 def mac_ref(acc, a, b, en):
@@ -9,12 +9,14 @@ def mac_ref(acc, a, b, en):
 
 
 def matmul_ref(A, B):
-    """参考模型: 4x4 矩阵乘法 C = A x B (纯 Python, 教科书定义)"""
-    N = len(A)
-    C = [[0] * N for _ in range(N)]
-    for i in range(N):
-        for j in range(N):
-            C[i][j] = sum(A[i][k] * B[k][j] for k in range(N))
+    """参考模型: C = A x B (支持矩形, 纯 Python 整数, 教科书定义)"""
+    rows = len(A)
+    K = len(A[0])
+    cols = len(B[0])
+    C = [[0] * cols for _ in range(rows)]
+    for i in range(rows):
+        for j in range(cols):
+            C[i][j] = sum(A[i][k] * B[k][j] for k in range(K))
     return C
 
 

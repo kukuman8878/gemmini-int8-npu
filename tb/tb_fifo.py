@@ -1,4 +1,4 @@
-# sim/tb_sync_fifo.py : sync_fifo 的 cocotb 测试
+# tb/tb_fifo.py : fifo 的 cocotb 测试
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, Timer
@@ -48,7 +48,7 @@ async def test_reset(dut):
 
 @cocotb.test()
 async def test_write_full(dut):
-    """测试2: 连写 9 个, 前 8 个进, full=1, 第 9 个被拒"""
+    """测试2: 连写 17 个 (深度16+1), 前 16 个进, full=1, 第 17 个被拒"""
     clock = Clock(dut.clk, 10, unit="ns")
     cocotb.start_soon(clock.start())
 
@@ -162,3 +162,55 @@ async def test_simult_rw(dut):
     await Timer(1, unit="step")
     assert dut.empty.value == 1, "drain done: empty should be 1"
     dut.rd_en.value = 0
+
+
+@cocotb.test()
+async def test_write_read_wrap(dut):
+    """测试5: 指针回绕 (写12->读12->写8, wr/rd 指针跨过 15->0 边界), 数据不丢"""
+    clock = Clock(dut.clk, 10, unit="ns")
+    cocotb.start_soon(clock.start())
+
+    dut.wr_en.value = 0
+    dut.rd_en.value = 0
+    dut.wr_data.value = 0
+
+    await reset_dut(dut)
+
+    # 写 12 -> 读 12 (指针从 0 走到 11)
+    dut.wr_en.value = 1
+    for i in range(12):
+        dut.wr_data.value = 0x40 + i
+        await RisingEdge(dut.clk)
+    dut.wr_en.value = 0
+    await Timer(1, unit="step")
+    assert not dut.empty.value, "after write 12: not empty"
+
+    dut.rd_en.value = 1
+    for i in range(12):
+        await Timer(1, unit="step")
+        assert dut.rd_data.value == 0x40 + i, \
+            f"read {i}: got {dut.rd_data.value:#x}, expect {0x40 + i:#x}"
+        await RisingEdge(dut.clk)
+    dut.rd_en.value = 0
+    await Timer(1, unit="step")
+    assert dut.empty.value == 1, "after read 12: empty"
+
+    # 再写 8 个: wr_ptr 从 12 走到 19 -> 回绕到 3
+    dut.wr_en.value = 1
+    for i in range(8):
+        dut.wr_data.value = 0x80 + i
+        await RisingEdge(dut.clk)
+    dut.wr_en.value = 0
+    await Timer(1, unit="step")
+    assert not dut.empty.value and not dut.full.value, "after wrap-write 8: mid state"
+
+    # 读回 8 个, 顺序必须正确 (回绕未破坏数据)
+    dut.rd_en.value = 1
+    for i in range(8):
+        await Timer(1, unit="step")
+        assert dut.rd_data.value == 0x80 + i, \
+            f"wrap-read {i}: got {dut.rd_data.value:#x}, expect {0x80 + i:#x}"
+        await RisingEdge(dut.clk)
+    dut.rd_en.value = 0
+    await Timer(1, unit="step")
+    assert dut.empty.value == 1, "after wrap-read 8: empty"

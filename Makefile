@@ -1,5 +1,5 @@
 # gemmini-int8-npu Makefile
-# 常用目标: lint / sim_mac / sim_fifo / sim_array / sim_array8 / regression / clean
+# 目标: lint / sim_mac / sim_mac_v / sim_fifo / sim_array / sim_array8 / regress / synth / mrproper
 
 SIM ?= icarus
 TOPLEVEL_LANG ?= verilog
@@ -9,49 +9,66 @@ TB := tb
 
 MAC_SRCS  := $(RTL)/mac.sv
 FIFO_SRCS := $(RTL)/fifo.sv
-PE_SRCS   := $(RTL)/pe.sv
-SYS4_SRCS := $(RTL)/pe.sv $(RTL)/systolic_array.sv
+SYS4_SRCS := $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/systolic_4x4.sv
 SYS8_SRCS := $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/systolic_8x8.sv
 
 LOGDIR := logs
+REGRESSION_TESTS := sim_mac sim_fifo sim_array sim_array8
 
 export PYTHONPATH := $(abspath $(TB)):$(abspath verification)
 
 # 需要 cocotb 的仿真目标统一走这里 (递归 make 携带各自变量)
-# 每个目标独立 SIM_BUILD, 避免共用 sim_build/sim.vvp 造成源文件变更不重编译
+# 每个目标独立 SIM_BUILD 与 COCOTB_RESULTS_FILE, 避免共用构建产物造成源文件变更不重编译
 .PHONY: sim_mac sim_fifo sim_array sim_array8
 
 sim_mac:
 	$(MAKE) sim COCOTB_TOPLEVEL=mac SIM_BUILD=sim_build/$@ \
+	  COCOTB_RESULTS_FILE=sim_build/$@/results.xml \
 	  COCOTB_TEST_MODULES=tb_mac VERILOG_SOURCES="$(MAC_SRCS)"
 
 sim_fifo:
 	$(MAKE) sim COCOTB_TOPLEVEL=fifo SIM_BUILD=sim_build/$@ \
+	  COCOTB_RESULTS_FILE=sim_build/$@/results.xml \
 	  COCOTB_TEST_MODULES=tb_fifo VERILOG_SOURCES="$(FIFO_SRCS)"
 
 sim_array:
-	$(MAKE) sim COCOTB_TOPLEVEL=systolic_array SIM_BUILD=sim_build/$@ \
+	$(MAKE) sim COCOTB_TOPLEVEL=systolic_4x4 SIM_BUILD=sim_build/$@ \
+	  COCOTB_RESULTS_FILE=sim_build/$@/results.xml \
 	  COCOTB_TEST_MODULES=tb_systolic VERILOG_SOURCES="$(SYS4_SRCS)"
 
 sim_array8:
 	$(MAKE) sim COCOTB_TOPLEVEL=systolic_8x8 SIM_BUILD=sim_build/$@ \
+	  COCOTB_RESULTS_FILE=sim_build/$@/results.xml \
 	  COCOTB_TEST_MODULES=tb_systolic VERILOG_SOURCES="$(SYS8_SRCS)"
+
+# Verilator C++ TB (交叉验证 mac)
+.PHONY: sim_mac_v
+sim_mac_v:
+	verilator --cc --exe --trace --top-module mac \
+	  -Mdir obj_dir -o sim_mac_v $(MAC_SRCS) $(TB)/tb_mac.cpp
+	$(MAKE) -C obj_dir -f Vmac.mk sim_mac_v
+	./obj_dir/sim_mac_v
 
 # regress: 依次跑全部仿真, 每次输出独立日志
 # 注: 不能命名为 regression —— cocotb Makefile.inc 中 sim 依赖同名目标, 会互相覆盖
 .PHONY: regress
 regress:
 	@mkdir -p $(LOGDIR)
-	@set -e; for t in sim_mac sim_fifo sim_array sim_array8; do \
-	  echo "===== $$t ====="; \
-	  $(MAKE) $$t 2>&1 | tee $(LOGDIR)/$$t.log || { \
-	    echo "REGRESSION FAIL at $$t (log: $(LOGDIR)/$$t.log)"; exit 1; }; \
+	@GITREV=$$(git rev-parse --short HEAD); \
+	for t in $(REGRESSION_TESTS); do \
+	  echo "===== $$t (rev $$GITREV) ====="; \
+	  { echo "# regression $$t"; \
+	    echo "# git rev: $$(git rev-parse HEAD)"; \
+	    echo "# cmd: $(MAKE) $$t"; \
+	    echo "# date: $$(date -Iseconds)"; } > $(LOGDIR)/$$t.log; \
+	  $(MAKE) $$t >> $(LOGDIR)/$$t.log 2>&1 \
+	    || { echo "REGRESSION FAIL at $$t (log: $(LOGDIR)/$$t.log)"; exit 1; }; \
 	done
 	@echo "REGRESSION PASS"
 
 .PHONY: lint
 lint:
-	verilator --lint-only -Wall -Wno-fatal $(RTL)/*.sv
+	verilator --lint-only -Wall -Wno-fatal -Wno-MULTITOP $(RTL)/*.sv
 
 .PHONY: synth
 synth:
@@ -61,7 +78,7 @@ synth:
 
 .PHONY: mrproper
 mrproper:
-	rm -rf __pycache__ $(TB)/__pycache__ verification/__pycache__ sim_build results.xml
+	rm -rf __pycache__ $(TB)/__pycache__ verification/__pycache__ sim_build results.xml obj_dir
 	rm -rf $(LOGDIR)
 
 include $(shell cocotb-config --makefiles)/Makefile.sim

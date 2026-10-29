@@ -49,8 +49,10 @@ scripts/          辅助脚本
 ```bash
 make lint          # Verilator lint 全部 RTL
 make sim_mac       # cocotb: MAC 定向测试
-make sim_array     # cocotb: 4x4 脉动阵列黄金向量比对
-make sim_fifo      # cocotb: FIFO 空/满/同时读写
+make sim_mac_v     # Verilator C++ TB: MAC 交叉验证
+make sim_fifo      # cocotb: FIFO 空/满/同时读写/指针回绕
+make sim_array     # cocotb: 4x4 脉动阵列 (定向/随机/零矩阵/en门控/部分K/连续任务/中途复位)
+make sim_array8    # cocotb: 8x8 脉动阵列
 make regress       # 全部 P0 仿真 + 回归日志
 ```
 
