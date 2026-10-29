@@ -57,6 +57,12 @@ COVERAGE = {
         "scripts/fault_injection.sh (en 门控变异, 期望回归 FAIL)",
         "多轮 agent 突变验证记录: docs/08_bug_log.md",
     ],
+    "SVA 断言 A1-A6": [
+        "tb_npu_top_assert A1 背压稳定/A3 busy一致/A4 复位合法/A6 进度",
+        "tb_pe_assert A5 无效拍不改acc/A5b 复位清零",
+        "tb_fifo_assert A2 满写空读禁止/A2b 复位为空",
+        "make sim_top_sva/sim_pe_sva/sim_fifo_sva (Verilator --assert)",
+    ],
 }
 
 
@@ -70,8 +76,8 @@ def main():
         if not tests:
             uncovered.append(case)
         for ref in tests:
-            # 校验引用真实存在: tb_xxx.test_name 或 scripts/*.sh
-            if ref.startswith("scripts/") or "agent 突变" in ref:
+            # 仅校验 "tb_xxx.test_name" 形式的引用; 其余 (脚本/SVA 模块/说明) 跳过
+            if not re.match(r"^tb_[a-z0-9_]+\.[a-z0-9_]+$", ref):
                 continue
             module, _, func = ref.rpartition(".")
             tb_path = os.path.join(REPO, "tb", module + ".py")

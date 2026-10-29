@@ -26,10 +26,10 @@ module npu_top #(
     output wire signed [31:0] out_c [0:N*N-1],  // 行优先拍平 C[i][j]
     // 状态
     output wire busy,
-    output wire done
+    output wire done,
+    output wire [1:0] state   // 调试口 (断言/观测用, 见 tb/npu_top_assert.sv)
 );
 
-wire [1:0] state;
 wire in_accept;
 wire signed [7:0] a_row [0:N-1];
 wire en_a [0:N-1];

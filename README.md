@@ -58,6 +58,7 @@ make sim_array     # cocotb: 4x4 脉动阵列直接驱动 (定向/随机/零矩�
 make sim_array8    # cocotb: 8x8 脉动阵列
 make regress       # 全部 P0 仿真 + 回归日志
 make fault_inject  # V12: 故障注入 (验证回归能捕获缺陷)
+make sim_top_sva   # W8: SVA 断言 (Verilator --assert 后端, 另有 sim_pe_sva/sim_fifo_sva)
 ```
 
 ## 验证口径

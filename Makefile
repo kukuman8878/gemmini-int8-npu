@@ -17,7 +17,7 @@ SYS4_SRCS := $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/systolic_4x4.sv
 SYS8_SRCS := $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/systolic_8x8.sv
 
 LOGDIR := logs
-REGRESSION_TESTS := sim_mac sim_mac_v sim_pe sim_pe16 sim_skew sim_controller sim_top sim_fifo sim_array sim_array8
+REGRESSION_TESTS := sim_mac sim_mac_v sim_pe sim_pe16 sim_pe_sva sim_skew sim_controller sim_top sim_top_sva sim_fifo sim_fifo_sva sim_array sim_array8
 
 export PYTHONPATH := $(abspath $(TB)):$(abspath verification)
 
@@ -79,6 +79,27 @@ sim_top:
 	  COCOTB_RESULTS_FILE=sim_build/$@/results.xml \
 	  COCOTB_TEST_MODULES=tb_top \
 	  VERILOG_SOURCES="$(RTL)/controller.sv $(RTL)/input_skew.sv $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/npu_top.sv"
+
+# SVA 断言目标 (Verilator --assert 后端; icarus 不支持并发 SVA)
+.PHONY: sim_top_sva sim_pe_sva sim_fifo_sva
+
+sim_top_sva:
+	$(MAKE) sim SIM=verilator COCOTB_TOPLEVEL=npu_top_assert SIM_BUILD=sim_build/$@ \
+	  COCOTB_RESULTS_FILE=sim_build/$@/results.xml \
+	  COCOTB_TEST_MODULES=tb_top EXTRA_ARGS="--assert" \
+	  VERILOG_SOURCES="$(RTL)/controller.sv $(RTL)/input_skew.sv $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/npu_top.sv $(TB)/npu_top_assert.sv"
+
+sim_pe_sva:
+	$(MAKE) sim SIM=verilator COCOTB_TOPLEVEL=pe_assert SIM_BUILD=sim_build/$@ \
+	  COCOTB_RESULTS_FILE=sim_build/$@/results.xml \
+	  COCOTB_TEST_MODULES=tb_pe EXTRA_ARGS="--assert" \
+	  VERILOG_SOURCES="$(RTL)/pe.sv $(TB)/pe_assert.sv"
+
+sim_fifo_sva:
+	$(MAKE) sim SIM=verilator COCOTB_TOPLEVEL=fifo_assert SIM_BUILD=sim_build/$@ \
+	  COCOTB_RESULTS_FILE=sim_build/$@/results.xml \
+	  COCOTB_TEST_MODULES=tb_fifo EXTRA_ARGS="--assert" \
+	  VERILOG_SOURCES="$(RTL)/fifo.sv $(TB)/fifo_assert.sv"
 
 # 批量随机回归入口 (SEED/PAIRS 由环境传入, 见 verification/random_regression.py)
 sim_top_seeded:
