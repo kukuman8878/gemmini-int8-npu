@@ -123,6 +123,8 @@ async def test_en_gating(dut):
     B = rand_mat_k(8, N, 62)
     for cycle in range(2 * N):
         await drive_slice(dut, A, B, 0, -1, cycle)   # k=-1 恒无效
+    for d in range(2 * N - 1):                       # 排空, 确保深层 PE 已见全垃圾
+        await drive_slice(dut, A, B, 0, -1, 2 * N + d)
     got = read_c(dut)
     assert compare(dut, got, [[0] * N for _ in range(N)], "en-gating") == 0
 
@@ -143,19 +145,21 @@ async def test_random_k(dut):
 
 @cocotb.test()
 async def test_back_to_back(dut):
-    """连续任务 (不复位): 累加语义 C1+C2"""
+    """连续任务 (不复位): 累加语义 C1+C2 (K 相等与 K 不等两种边界)"""
     clock = Clock(dut.clk, 10, unit="ns")
     cocotb.start_soon(clock.start())
-    A1, B1 = rand_mat_k(N, 4, 91), rand_mat_k(4, N, 92)
-    A2, B2 = rand_mat_k(N, 4, 93), rand_mat_k(4, N, 94)
-    got = await run_tile(dut, A1, B1, 4, reset=True, drain=False)   # 不排空直接下一任务
-    got = await run_tile(dut, A2, B2, 4, reset=False)
-    want = matmul_ref(A1, B1)
-    w2 = matmul_ref(A2, B2)
-    for i in range(N):
-        for j in range(N):
-            want[i][j] += w2[i][j]
-    assert compare(dut, got, want, "back-to-back") == 0
+    for K1, K2 in ((4, 4), (4, 2), (2, 6)):
+        A1, B1 = rand_mat_k(N, K1, 91), rand_mat_k(K1, N, 92)
+        A2, B2 = rand_mat_k(N, K2, 93), rand_mat_k(K2, N, 94)
+        got = await run_tile(dut, A1, B1, K1, reset=True, drain=False)   # 不排空直接下一任务
+        got = await run_tile(dut, A2, B2, K2, reset=False)
+        want = matmul_ref(A1, B1)
+        w2 = matmul_ref(A2, B2)
+        for i in range(N):
+            for j in range(N):
+                want[i][j] += w2[i][j]
+        fails = compare(dut, got, want, f"back-to-back K1={K1} K2={K2}")
+        assert fails == 0, f"{fails} mismatches for K1={K1} K2={K2}"
 
 
 @cocotb.test()

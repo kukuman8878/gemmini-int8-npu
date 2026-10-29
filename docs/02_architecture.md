@@ -33,9 +33,10 @@
 - 每个 PE 保存其负责的 C[i,j] 累加值。
 - A 由左向右、B 由上向下，每拍前进一格。
 - 为使 A[i,k] 与 B[k,j] 在 PE(i,j) 同拍相遇：
-  - 左边界 A 的第 i 行延迟 i 拍（索引从 0 开始）；
+  - 左边界 A 的第 i 行延迟 i 拍（索引从 0 开始，相对帧起点）；
   - 上边界 B 的第 j 列延迟 j 拍。
-- 数据有效时才累加（en_a && en_b）；停顿期间整个阵列同步保持状态（逻辑拍不前进）。
+- 数据有效时才累加（en_a && en_b）；停顿期间整个阵列同步保持状态（逻辑拍不前进）——**冻结语义待 W5 controller 定稿**（当前 PE/input_skew 移位链在停顿时不冻结，见 docs/03 §1 TODO-决策）。
+- input_skew 在绝对帧上为 A/B 各引入 +1 拍统一流水延迟（相对对齐不变）。
 
 ## 3. 已有实现（周练习导入 + W2-W4 硬化）
 
@@ -55,7 +56,7 @@
 | `rtl/controller.sv` | IDLE/LOAD/COMPUTE/DRAIN/OUTPUT FSM | W5 |
 | `rtl/npu_top.sv` | 系统连接、全局握手、结果输出 | W6 |
 
-（`rtl/input_skew.sv` 已于 W4 完成，见 §2。）
+（`rtl/input_skew.sv` 已于 W4 完成，见 §3。）
 
 ## 5. 与 Gemmini 的关系
 

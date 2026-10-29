@@ -85,7 +85,7 @@ regress:
 
 .PHONY: lint
 lint:
-	verilator --lint-only -Wall -Wno-fatal -Wno-MULTITOP $(RTL)/*.sv $(TB)/pe_16_64.sv
+	verilator --lint-only -Wall -Wno-fatal -Wno-MULTITOP $(RTL)/*.sv $(TB)/pe_16_64.sv $(TB)/skew_systolic_4x4.sv
 
 .PHONY: synth
 synth:
