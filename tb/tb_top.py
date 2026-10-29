@@ -128,6 +128,21 @@ async def test_e2e_mid_reset(dut):
 
 
 @cocotb.test()
+async def test_e2e_large_k(dut):
+    """K=256 (合法域上限) 端到端: 结果精确 (V04 收尾 + SVA A6' 无假阳性)"""
+    clock = Clock(dut.clk, 10, unit="ns")
+    cocotb.start_soon(clock.start())
+    await reset_dut(dut)
+
+    K = 256
+    A = rand_mat_k(N, K, 181)
+    B = rand_mat_k(K, N, 182)
+    got = await run_task(dut, A, B, K)
+    assert compare(dut, got, matmul_ref(A, B), "e2e-K256") == 0
+    dut._log.info("e2e K=256 passed")
+
+
+@cocotb.test()
 async def test_e2e_illegal_and_stale(dut):
     """非法 K 拒绝; 任务完成后旧配置失效 (需重新 cfg)"""
     clock = Clock(dut.clk, 10, unit="ns")

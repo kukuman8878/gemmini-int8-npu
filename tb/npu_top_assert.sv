@@ -69,8 +69,10 @@ assert property (@(posedge clk) disable iff (!rst_n) (cfg_ready |-> !busy));
 assert property (@(posedge clk) disable iff (!rst_n)
     $rose(rst_n) |=> ((state == 2'd0) && !busy && !out_valid));
 
-// A6: 完成进度: 任务必须在有界时间内结束 (1..64 拍)
+// A6: DRAIN 段内部进度 (纯内部真 LTL 属性, 无外部握手依赖):
+//     进入 DRAIN 后必须在 2N-1 拍内到达 OUTPUT
+//   (LOAD/OUTPUT 段进度以 in_valid/out_ready 握手为前提, 由 TB 超时机制保证)
 assert property (@(posedge clk) disable iff (!rst_n)
-    busy |-> ##[1:64] !busy);
+    ((state == 2'd2) |-> ##[1:2*N-1] (state == 2'd3)));
 
 endmodule

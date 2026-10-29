@@ -39,8 +39,8 @@ pe #(.A_WIDTH(A_WIDTH), .ACC_WIDTH(ACC_WIDTH)) u_pe (
 assert property (@(posedge clk) disable iff (!rst_n)
     (!acc_clr && !(en_a && en_b)) |=> (acc == $past(acc)));
 
-// A5b: 复位释放后累加器清零
+// A5b: 复位释放后累加器清零 (释放沿无有效累加时为前提, 避免误约束合法行为)
 assert property (@(posedge clk) disable iff (!rst_n)
-    $rose(rst_n) |=> (acc == {ACC_WIDTH{1'b0}}));
+    ($rose(rst_n) && !acc_clr && !(en_a && en_b)) |=> (acc == {ACC_WIDTH{1'b0}}));
 
 endmodule

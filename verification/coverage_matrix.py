@@ -58,10 +58,10 @@ COVERAGE = {
         "多轮 agent 突变验证记录: docs/08_bug_log.md",
     ],
     "SVA 断言 A1-A6": [
-        "tb_npu_top_assert A1 背压稳定/A3 busy一致/A4 复位合法/A6 进度",
-        "tb_pe_assert A5 无效拍不改acc/A5b 复位清零",
-        "tb_fifo_assert A2 满写空读禁止/A2b 复位为空",
-        "make sim_top_sva/sim_pe_sva/sim_fifo_sva (Verilator --assert)",
+        "tb/npu_top_assert.sv",
+        "tb/pe_assert.sv",
+        "tb/fifo_assert.sv",
+        "make sim_top_sva / sim_pe_sva / sim_fifo_sva (Verilator --assert)",
     ],
 }
 
@@ -76,18 +76,22 @@ def main():
         if not tests:
             uncovered.append(case)
         for ref in tests:
-            # 仅校验 "tb_xxx.test_name" 形式的引用; 其余 (脚本/SVA 模块/说明) 跳过
-            if not re.match(r"^tb_[a-z0-9_]+\.[a-z0-9_]+$", ref):
+            # 校验 "tb_xxx.test_name" 与 "tb/xxx.sv" 形式的引用; 其余 (命令/说明) 跳过
+            if re.match(r"^tb_[a-z0-9_]+\.[a-z0-9_]+$", ref):
+                module, _, func = ref.rpartition(".")
+                tb_path = os.path.join(REPO, "tb", module + ".py")
+                if not os.path.isfile(tb_path):
+                    missing_refs.append(f"{case}: {ref} (tb 文件不存在)")
+                    continue
+                with open(tb_path, encoding="utf-8") as f:
+                    content = f.read()
+                if not re.search(rf"^async def {re.escape(func)}\s*\(", content, re.M):
+                    missing_refs.append(f"{case}: {ref}")
+            elif re.match(r"^tb/[a-z0-9_]+\.sv$", ref):
+                if not os.path.isfile(os.path.join(REPO, ref)):
+                    missing_refs.append(f"{case}: {ref} (断言文件不存在)")
+            else:
                 continue
-            module, _, func = ref.rpartition(".")
-            tb_path = os.path.join(REPO, "tb", module + ".py")
-            if not os.path.isfile(tb_path):
-                missing_refs.append(f"{case}: {ref} (tb 文件不存在)")
-                continue
-            with open(tb_path, encoding="utf-8") as f:
-                content = f.read()
-            if not re.search(rf"^async def {re.escape(func)}\s*\(", content, re.M):
-                missing_refs.append(f"{case}: {ref}")
         print(f"{case:<32} {len(tests):<8} {', '.join(tests[:3])}"
               + (" ..." if len(tests) > 3 else ""))
     print("-" * 110)

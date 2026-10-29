@@ -37,8 +37,8 @@ assert property (@(posedge clk) disable iff (!rst_n) (empty |-> !rd_valid));
 assert property (@(posedge clk) disable iff (!rst_n) ((wr_valid && wr_ready) |-> !full));
 assert property (@(posedge clk) disable iff (!rst_n) ((rd_valid && rd_ready) |-> !empty));
 
-// A2b: 复位后为空
+// A2b: 复位释放后为空 (释放沿无合法写为前提, 避免误约束合法行为)
 assert property (@(posedge clk) disable iff (!rst_n)
-    $rose(rst_n) |=> empty);
+    ($rose(rst_n) && !(wr_valid && wr_ready)) |=> empty);
 
 endmodule

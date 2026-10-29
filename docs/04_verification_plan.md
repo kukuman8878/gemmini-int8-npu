@@ -135,9 +135,9 @@ Icarus 12 不支持并发 SVA（syntax error on property_spec），故断言在 
 |:---|:---|:---|:---|
 | A1 | tb/npu_top_assert.sv | `out_valid && !out_ready \|=> $stable(out_c_packed)` | acc_clr→out_valid 变异：verilator 断言直接报告捕获 ✓ |
 | A2 | tb/fifo_assert.sv | `full \|-> !wr_ready`、`empty \|-> !rd_valid`、握手前提一致性、复位为空 | wr_ready=1'b1 变异：断言报告捕获 ✓ |
-| A3 | tb/npu_top_assert.sv | `busy == (state != IDLE)`、out_valid/in_ready/cfg_ready 与 busy 关系 | 随 A1 变异运行无假阳性 |
-| A4 | tb/npu_top_assert.sv | `$rose(rst_n) \|=> IDLE && !busy && !out_valid` | 全任务流 7/7 无假阳性 |
-| A5 | tb/pe_assert.sv | `(!acc_clr && !(en_a&&en_b)) \|=> acc == $past(acc)`、复位清零 | en 门控变异：TB+断言共同覆盖，无假阳性 |
-| A6 | tb/npu_top_assert.sv | `busy \|-> ##[1:64] !busy`（有界进度，TB 超时兜底） | 全任务流无假阳性 |
+| A3 | tb/npu_top_assert.sv | `busy == (state != IDLE)`、out_valid/in_ready/cfg_ready 与 busy 关系（结构/连线一致性检查） | 随 A1 变异运行无假阳性 |
+| A4 | tb/npu_top_assert.sv | `$rose(rst_n) \|=> IDLE && !busy && !out_valid` | 全任务流无假阳性 |
+| A5 | tb/pe_assert.sv | `(!acc_clr && !(en_a&&en_b)) \|=> acc == $past(acc)`、复位清零（释放沿无有效累加为前提） | en 门控变异：TB+断言共同覆盖，无假阳性 |
+| A6 | tb/npu_top_assert.sv | **DRAIN 段内部进度**：`(state==DRAIN) \|-> ##[1:2N-1] (state==OUT)`（真 LTL，无外部握手依赖）；LOAD/OUTPUT 段进度以握手为前提，由 TB 超时机制保证 | K=256 端到端无假阳性（tb_top: test_e2e_large_k） |
 
 **执行**：`make sim_top_sva / sim_pe_sva / sim_fifo_sva`（已纳入 regress）。断言无未解释失败；关键断言经变异验证可触发（docs/08_bug_log.md 突变总览）。
