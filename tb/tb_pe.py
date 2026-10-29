@@ -74,6 +74,17 @@ async def test_forward_delay(dut):
     ao = dut.a_out.value.to_signed()
     bo = dut.b_out.value.to_signed()
     assert ao == 11 and bo == 0, f"no-edge: got ({ao},{bo}), want (11,0)"
+
+    # en 标志与 acc 同属一个 always 块, 一并验证无沿保持
+    _, _, _, _, _ = await step(dut, 11, 5, 1, 1)    # 沿后: en_out=1/1, acc=55
+    dut.en_a.value = 0                              # 改 en, 不打拍
+    dut.en_b.value = 0
+    await Timer(1, unit="step")
+    eao = int(dut.en_a_out.value)
+    ebo = int(dut.en_b_out.value)
+    acc = dut.acc.value.to_signed()
+    assert eao == 1 and ebo == 1, f"no-edge en: got ({eao},{ebo}), want (1,1)"
+    assert acc == 55, f"no-edge acc: got {acc}, want 55"
     dut._log.info("forward delay: register (not combinational) behavior confirmed")
 
 
