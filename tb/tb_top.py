@@ -100,14 +100,19 @@ async def load_slices(dut, A, B, K, pauses=()):
 
 
 async def wait_and_read(dut, hold_ready=0):
-    """等 out_valid (可先反压 hold_ready 拍), 读回结果并完成握手"""
+    """等 out_valid (可先反压 hold_ready 拍), 读回结果并完成握手
+    反压期间逐拍读值, 与最终结果比对验证 out_c 稳定性"""
     while not int(dut.out_valid.value):
         await edge(dut)
+    hold_reads = []
     for _ in range(hold_ready):              # 反压: out_ready=0 期间验证数据稳定
         assert int(dut.out_valid.value) == 1, "out_valid must hold under backpressure"
-        got_now = read_out_c(dut)
+        hold_reads.append(read_out_c(dut))
         await edge(dut)
     C = read_out_c(dut)
+    for hc in hold_reads:                    # 反压期间每次读值必须与最终结果一致
+        fails = compare(dut, hc, C, "e2e-backpressure-stable")
+        assert fails == 0, "out_c changed under backpressure"
     dut.out_ready.value = 1
     await edge(dut)
     dut.out_ready.value = 0

@@ -159,6 +159,10 @@ module npu_top #(parameter N = 4) (
 | `out_valid/out_ready` | out/in | 携带完整 4×4 INT32 结果；`valid&&!ready` 期间 `out_c` 必须保持稳定 | 已实现（tb_top: test_e2e_backpressure 锁定） |
 | `busy` | out | 任务开始至结果完成握手期间为 1 | 已实现 |
 | `done` | out | 输出完成握手沿后一拍的单拍脉冲（寄存器输出） | 已实现（tb_top: test_e2e_basic 锁定） |
+| `start` | in | 单拍启动脉冲；仅 IDLE 且已配置（cfg_done=1）生效，同拍 cfg 无效 | 已实现（决策 #6） |
+| `cfg_k` | in | 归约长度 K，9 bit，合法域 1…256，非法拒绝 | 已实现（tb_controller: test_illegal_cfg） |
+| `a_vec/b_vec` | in | A 列切片 / B 行切片（每拍一个归约切片，与 in_valid 同拍） | 已实现 |
+| `out_c` | out | 行优先拍平 4×4 INT32 结果；OUTPUT 期间稳定，IDLE 时被清零 | 已实现 |
 
 **已锁定的语义决策（W5，实现前定稿，测试验证）**：
 
