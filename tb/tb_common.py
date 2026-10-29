@@ -45,7 +45,8 @@ def read_out_c(dut):
 
 
 def compare(dut, got, want, tag):
-    """Scoreboard 比对 (逐元素精确), 返回失败数"""
+    """Scoreboard 便捷包装 (逐调用计分); 跨用例聚合统计用持久 Scoreboard 实例
+    (见 tb_regression.py, 结束时调用 summary())"""
     return Scoreboard(log=dut._log.error, name=tag).check_matrix(got, want, tag)
 
 

@@ -5,7 +5,7 @@
 set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 MUT="$(mktemp -d /tmp/fault_inject.XXXXXX)"
-trap 'rm -rf "$MUT"' EXIT
+trap 'rm -rf "$MUT" "$REPO/sim_build/fault_inject"' EXIT
 
 cp -r "$REPO/rtl" "$MUT/rtl"
 # 变异: 破坏 PE en 门控 (en_a&&en_b -> en_a)
@@ -18,7 +18,7 @@ fi
 
 cd "$REPO"
 set +e
-make sim_array RTL="$MUT/rtl" > "$MUT/run.log" 2>&1
+make sim_array_fault RTL="$MUT/rtl" > "$MUT/run.log" 2>&1
 RC=$?
 set -e
 if [ $RC -eq 0 ]; then

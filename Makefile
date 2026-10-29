@@ -108,10 +108,16 @@ regress:
 lint:
 	verilator --lint-only -Wall -Wno-fatal -Wno-MULTITOP $(RTL)/*.sv $(TB)/pe_16_64.sv $(TB)/skew_systolic_4x4.sv
 
-# V12 故障注入 (脚本用 RTL= 覆盖在 /tmp 变异副本上运行)
-.PHONY: fault_inject
+# V12 故障注入 (脚本用 RTL= 覆盖在 /tmp 变异副本上运行, 独立 SIM_BUILD 不污染正常回归)
+.PHONY: fault_inject sim_array_fault
 fault_inject:
 	bash scripts/fault_injection.sh
+
+sim_array_fault:
+	$(MAKE) sim COCOTB_TOPLEVEL=systolic_4x4 SIM_BUILD=sim_build/fault_inject \
+	  COCOTB_RESULTS_FILE=sim_build/fault_inject/results.xml \
+	  COCOTB_TEST_MODULES=tb_systolic \
+	  VERILOG_SOURCES="$(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/systolic_4x4.sv"
 
 .PHONY: synth
 synth:

@@ -118,7 +118,7 @@ Testplan -> 定向/约束随机用例 -> Driver -> DUT
 
 | 组件 | 位置 | 说明 |
 |:---|:---|:---|
-| Scoreboard | `verification/scoreboard.py` | 逐元素精确比对计分板（log 注入、失败明细、统计）；tb_top/tb_skew/tb_systolic 经 `tb_common.py` 复用 |
+| Scoreboard | `verification/scoreboard.py` | 逐元素精确比对计分板（log 注入、失败明细、check_matrix、summary）；tb_top/tb_regression 经 `tb_common.py` 复用（聚合统计见 tb_regression）；tb_skew/tb_systolic 保留本地等价 compare |
 | Driver/Monitor | `tb/tb_common.py` | npu_top 端到端共享助手（reset/cfg/start/load_slices/wait_and_read/run_task） |
 | 批量随机回归 | `verification/random_regression.py` + `tb/tb_regression.py` + `make sim_top_seeded` | SEED×K{1,2,4,8,16}×PAIRS；日志记录 DUT rev/命令/种子/逐种子结果（`logs/random_regression_<rev>.json`） |
 | 覆盖矩阵 | `verification/coverage_matrix.py` | V01–V12 bin 映射核对，未覆盖 bin 退出码 1 |

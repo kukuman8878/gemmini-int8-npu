@@ -63,17 +63,29 @@ def main():
     print(f"{'用例':<34} {'覆盖项数':<6} 覆盖测试")
     print("-" * 110)
     uncovered = []
+    missing_refs = []
     for case, tests in COVERAGE.items():
         mark = "✓" if tests else "✗ 未覆盖"
         if not tests:
             uncovered.append(case)
+        for ref in tests:
+            # 校验引用真实存在: tb_xxx.test_name 或 scripts/*.sh
+            if ref.startswith("scripts/") or "agent 突变" in ref:
+                continue
+            module, _, func = ref.rpartition(".")
+            tb_path = os.path.join(REPO, "tb", module + ".py")
+            if not os.path.isfile(tb_path) or f"async def {func}" not in open(tb_path).read():
+                missing_refs.append(f"{case}: {ref}")
         print(f"{case:<32} {len(tests):<8} {', '.join(tests[:3])}"
               + (" ..." if len(tests) > 3 else ""))
     print("-" * 110)
-    if uncovered:
-        print(f"未覆盖 bin: {uncovered}")
+    if uncovered or missing_refs:
+        if uncovered:
+            print(f"未覆盖 bin: {uncovered}")
+        if missing_refs:
+            print(f"失效引用 (测试名不存在): {missing_refs}")
         sys.exit(1)
-    print("P0 覆盖矩阵: 全部 bin 至少一个覆盖项")
+    print("P0 覆盖矩阵: 全部 bin 至少一个覆盖项, 全部引用有效")
     sys.exit(0)
 
 

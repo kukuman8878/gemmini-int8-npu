@@ -41,4 +41,5 @@ async def test_seeded_random(dut):
             break
 
     dut._log.info("seeded regression: seed=%d pairs=%d K=%s", SEED, PAIRS, K_LIST)
+    dut._log.info(sb.summary())
     assert sb.fails == 0, f"{sb.fails} mismatches (seed={SEED})"
