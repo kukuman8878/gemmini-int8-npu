@@ -1,5 +1,5 @@
 # gemmini-int8-npu Makefile
-# 目标: lint / sim_mac / sim_mac_v / sim_pe / sim_pe16 / sim_fifo / sim_array / sim_array8 / regress / synth / mrproper
+# 目标: lint / sim_mac / sim_mac_v / sim_pe / sim_pe16 / sim_skew / sim_fifo / sim_array / sim_array8 / regress / synth / mrproper
 
 SIM ?= icarus
 TOPLEVEL_LANG ?= verilog
@@ -14,13 +14,13 @@ SYS4_SRCS := $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/systolic_4x4.sv
 SYS8_SRCS := $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/systolic_8x8.sv
 
 LOGDIR := logs
-REGRESSION_TESTS := sim_mac sim_mac_v sim_pe sim_pe16 sim_fifo sim_array sim_array8
+REGRESSION_TESTS := sim_mac sim_mac_v sim_pe sim_pe16 sim_skew sim_fifo sim_array sim_array8
 
 export PYTHONPATH := $(abspath $(TB)):$(abspath verification)
 
 # 需要 cocotb 的仿真目标统一走这里 (递归 make 携带各自变量)
 # 每个目标独立 SIM_BUILD 与 COCOTB_RESULTS_FILE, 避免共用构建产物造成源文件变更不重编译
-.PHONY: sim_mac sim_mac_v sim_pe sim_pe16 sim_fifo sim_array sim_array8
+.PHONY: sim_mac sim_mac_v sim_pe sim_pe16 sim_skew sim_fifo sim_array sim_array8
 
 sim_mac:
 	$(MAKE) sim COCOTB_TOPLEVEL=mac SIM_BUILD=sim_build/$@ \
@@ -59,6 +59,12 @@ sim_pe16:
 	$(MAKE) sim COCOTB_TOPLEVEL=pe_16_64 SIM_BUILD=sim_build/$@ \
 	  COCOTB_RESULTS_FILE=sim_build/$@/results.xml \
 	  COCOTB_TEST_MODULES=tb_pe VERILOG_SOURCES="$(PE_SRCS) $(TB)/pe_16_64.sv"
+
+sim_skew:
+	$(MAKE) sim COCOTB_TOPLEVEL=skew_systolic_4x4 SIM_BUILD=sim_build/$@ \
+	  COCOTB_RESULTS_FILE=sim_build/$@/results.xml \
+	  COCOTB_TEST_MODULES=tb_skew \
+	  VERILOG_SOURCES="$(RTL)/input_skew.sv $(SYS4_SRCS) $(TB)/skew_systolic_4x4.sv"
 
 # regress: 依次跑全部仿真, 每次输出独立日志
 # 注: 不能命名为 regression —— cocotb Makefile.inc 中 sim 依赖同名目标, 会互相覆盖

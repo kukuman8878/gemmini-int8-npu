@@ -12,7 +12,7 @@
 | 时钟 | 单时钟域 `clk`，无 CDC | 已定 |
 | 位宽 | A/B = signed 8bit；乘积 = signed 16bit；累加 = signed 32bit（默认值；mac.sv 已参数化 A_WIDTH/ACC_WIDTH） | 已定 |
 | K 范围 | 1…256（单 tile 归约长度） | 已定 |
-| skew 归属 | 左/上边界错位由 `input_skew.sv` **或** 测试驱动完成，二者只能取其一 | 已定契约；当前实现（周练习 TB）由驱动端完成，W4 迁移到 `input_skew.sv` |
+| skew 归属 | 左/上边界错位由 `input_skew.sv` 完成（设计中唯一 skew 点）；tb_systolic 直接测阵列时在驱动端斜排属测试行为 | 已定（W4 已迁移至 `input_skew.sv`） |
 | 无效数据 | 无效拍（en=0）不得更新累加器 | 已定（当前 PE 实现：en=0 仅门控 acc，流水寄存器照常移位） |
 | 停顿语义 | 停顿/反压期间是否冻结整条流水 | **TODO-决策**（当前 PE 不冻结流水；W5 controller 引入背压时一并定义，可选 recirculation 或时钟门控） |
 
@@ -85,6 +85,26 @@ module fifo #(parameter WIDTH = 8, DEPTH = 16) (
 
 - DEPTH 必须为 2 的幂且 ≥ 2（计数器法判满空；DEPTH=1 会使地址位宽非法，不支持）。
 - 当前接口为 `wr_en/rd_en`；**W5 收紧为 valid/ready 或新增 wrapper**（TODO-决策：改内核 vs 加 adapter）。
+
+### 2.5 input_skew.sv（W4 已实现，已通过联合测试）
+
+```systemverilog
+module input_skew #(parameter N = 4, A_WIDTH = 8) (
+  input  wire clk, rst_n, valid,
+  input  wire signed [A_WIDTH-1:0] a_vec [0:N-1],  // A 列切片 a_vec[i]=A[i][k]
+  input  wire signed [A_WIDTH-1:0] b_vec [0:N-1],  // B 行切片 b_vec[j]=B[k][j]
+  output wire signed [A_WIDTH-1:0] a_row [0:N-1],
+  output wire en_a  [0:N-1],
+  output wire signed [A_WIDTH-1:0] b_col [0:N-1],
+  output wire en_b  [0:N-1]
+);
+```
+
+- 每拍呈现一个归约切片（k=0…K-1）；`valid=1` 表示切片有效，无效拍数据不得进入阵列。
+- 移位链实现：A 第 i 行延迟 1+i 拍、B 第 j 列延迟 1+j 拍（A/B 同幅偏移，相对对齐不变；输出全寄存器，便于时序收敛）。
+- 时序：K 拍呈现 + (2N-1) 拍排空后 4×4 结果全部就绪（相比驱动端直灌多 1 拍流水延迟）。
+- 首版无背压（valid 仅门控）；停顿语义 TODO-决策见 §1。
+- 联合验证：`tb/skew_systolic_4x4.sv`（input_skew + systolic_4x4）+ `tb/tb_skew.py`。
 
 ## 3. 顶层握手契约（npu_top，W6 目标，草案）
 

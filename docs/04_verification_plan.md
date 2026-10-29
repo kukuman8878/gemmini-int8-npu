@@ -26,8 +26,8 @@ Testplan -> 定向/约束随机用例 -> Driver -> DUT
 | V01 | 零矩阵、单位矩阵 | 数据通路与初始累加清零 | 阵列级已覆盖（tb_systolic: test_zero_matrix/test_directed_identity） |
 | V02 | 全正、全负、混合符号 | signed 乘法/符号扩展 | 已通过（MAC 级 + 阵列随机含全范围符号） |
 | V03 | −128、127 边界组合 | 数值边界和乘积位宽 | 已通过（MAC 级，tb_mac.cpp 与 tb_mac.py 双验证） |
-| V04 | K=1、2、N/2、N-1 部分归约 | 归约长度与排空时序 | 阵列级已覆盖（tb_systolic: test_partial_k）；K=16/64/256 待 controller 支持 |
-| V05 | 行列边界块（零填充） | padding 不产生额外有效输出 | 待建（W4-W6 顶层） |
+| V04 | K=1、2、N/2、N-1 部分归约 | 归约长度与排空时序 | 阵列级已覆盖（tb_systolic: test_partial_k）；K∈{1,2,4,8,16}（含 K>N）已覆盖（tb_skew: test_random_k）；K=64/256 待 controller 支持 |
+| V05 | 行列边界块（零填充） | padding 不产生额外有效输出 | 黄金向量 2×2→4×4 零填充已覆盖（tb_skew: test_golden_2x2） |
 | V06 | 随机矩阵，固定种子集合 | 数据相关性和累加正确性 | 阵列级已跑（N=4/8，各 20 对，种子 2024） |
 | V07 | 输入暂停/输出反压 | 数据稳定与全局同步停顿 | 待建（依赖 W5 停顿语义决策，见 docs/03 §1） |
 | V08 | FIFO 空、满、同时读写 | 丢失/重复/溢出及指针回绕 | 已通过（含回绕用例 test_write_read_wrap） |
@@ -74,3 +74,18 @@ Testplan -> 定向/约束随机用例 -> Driver -> DUT
 | test_en_gating | (0,1)/(1,0)/(0,0) 三种无效组合且数据非零时 acc 保持 | 通过 |
 | test_mid_reset | 累加中复位：acc 与转发寄存器清零 | 通过 |
 | test_random | 1000 拍随机数据 + 随机 en 组合，Scoreboard 逐拍比对（含转发/标志/累加全量比对） | 通过 |
+
+## 7. input_skew 联合验证报告（W4）
+
+`tb/tb_skew.py`（cocotb，顶层 `skew_systolic_4x4` = input_skew + systolic_4x4，`make sim_skew`）：
+
+| 测试 | 检查点 | 结论 |
+|:---|:---|:---|
+| test_golden_2x2 | 接口规范黄金向量（2×2 零填充至 4×4） | 通过 |
+| test_zero | 零矩阵 tile | 通过 |
+| test_en_gating | valid=0 且垃圾数据非零时不累加 | 通过 |
+| test_random_k | K∈{1,2,4,8,16}（含 K>N）随机 tile 精确比对 | 通过 |
+| test_back_to_back | 连续任务累加语义（不排空直接接下一任务） | 通过 |
+| test_mid_reset | 呈现中途复位后只含新任务结果 | 通过 |
+
+时序口径：K 拍呈现 + (2N-1) 拍排空；该口径经黄金模型逐元素比对验证，与 docs/03 §2.5 一致。

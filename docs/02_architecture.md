@@ -37,23 +37,25 @@
   - 上边界 B 的第 j 列延迟 j 拍。
 - 数据有效时才累加（en_a && en_b）；停顿期间整个阵列同步保持状态（逻辑拍不前进）。
 
-## 3. 已有实现（周练习导入）
+## 3. 已有实现（周练习导入 + W2-W4 硬化）
 
 | 文件 | 内容 | 备注 |
 |:---|:---|:---|
-| `rtl/mac.sv` | en 使能的乘累加 | signed 声明在端口处定死 |
-| `rtl/pe.sv` | a/b 各寄存 1 拍转发 + 局部累加 | en_a/en_b 随数据传递 |
+| `rtl/mac.sv` | en 使能的乘累加 | W2 参数化 A_WIDTH/ACC_WIDTH |
+| `rtl/pe.sv` | a/b 各寄存 1 拍转发 + 局部累加 | W3 参数化 |
+| `rtl/input_skew.sv` | A 行/B 列移位链错位 (delay 1+i) | W4 新增 |
 | `rtl/systolic_array.sv` | 参数化 N×N 阵列 | generate 网格，行优先拍平输出 |
-| `rtl/systolic_4x4.sv` / `rtl/systolic_8x8.sv` | 4×4 / 8×8 实例 | 4×4 为 P0，8×8 为 P1 |
+| `rtl/systolic_4x4.sv` / `rtl/systolic_8x8.sv` | 4×4 / 8×8 薄包装 | 4×4 为 P0，8×8 为 P1 |
 | `rtl/fifo.sv` | 同步 FIFO（WIDTH×DEPTH） | 当前为 wr_en/rd_en 接口，valid/ready 化待 W5 |
 
 ## 4. 待建模块
 
 | 文件 | 职责 | 计划周 |
 |:---|:---|:---|
-| `rtl/input_skew.sv` | 生成 A 行/B 列错位输入（契约见 03 文档） | W4 |
 | `rtl/controller.sv` | IDLE/LOAD/COMPUTE/DRAIN/OUTPUT FSM | W5 |
 | `rtl/npu_top.sv` | 系统连接、全局握手、结果输出 | W6 |
+
+（`rtl/input_skew.sv` 已于 W4 完成，见 §2。）
 
 ## 5. 与 Gemmini 的关系
 
