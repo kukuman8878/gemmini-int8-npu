@@ -60,7 +60,7 @@ module systolic_array #(parameter N = 4) (
 ```
 
 - 边界注入：`a_row[i]`/`en_a[i]` 接第 i 行左边界；`b_col[j]`/`en_b[j]` 接第 j 列上边界。
-- 时序：N×N×N 单 tile 满速流水时，结果在 `3N-2` 拍后全部就绪（4×4 为 10 拍）。
+- 时序：N×N 阵列做 N×K×N 单 tile 满速流水时（K=N），结果在 `3N-2` 拍后全部就绪（4×4 为 10 拍）；K<N 时为 `2N+K-2` 拍。
 - skew 由外部（驱动或 input_skew）完成：A 第 i 行延迟 i 拍、B 第 j 列延迟 j 拍。
 - 薄包装实例：`systolic_4x4`（N=4，c_ij 拍平输出）、`systolic_8x8`（N=8，c_flat 输出），无重复逻辑。
 

@@ -36,7 +36,7 @@ Testplan -> 定向/约束随机用例 -> Driver -> DUT
 | V11 | 非法配置与 busy 时 start | 设计定义的拒绝/响应行为 | 待建（W5-W6 顶层） |
 | V12 | 回归故障注入（独立分支） | Scoreboard/SVA 是否能捕获错误 | 待建 |
 
-补充：en 门控专项（en=0 且数据非零时不累加）已覆盖（tb_systolic: test_en_gating）。
+补充：en 门控专项已覆盖——en=0 且数据非零时不累加（tb_systolic: test_en_gating 全程非零垃圾数据；test_partial_k 的窗口外垃圾数据段双保险）。
 
 ## 3. 验收指标（目标，非当前实测）
 

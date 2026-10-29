@@ -13,7 +13,7 @@ SYS4_SRCS := $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/systolic_4x4.sv
 SYS8_SRCS := $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/systolic_8x8.sv
 
 LOGDIR := logs
-REGRESSION_TESTS := sim_mac sim_fifo sim_array sim_array8
+REGRESSION_TESTS := sim_mac sim_mac_v sim_fifo sim_array sim_array8
 
 export PYTHONPATH := $(abspath $(TB)):$(abspath verification)
 
@@ -79,6 +79,7 @@ synth:
 .PHONY: mrproper
 mrproper:
 	rm -rf __pycache__ $(TB)/__pycache__ verification/__pycache__ sim_build results.xml obj_dir
+	rm -f *.vcd
 	rm -rf $(LOGDIR)
 
 include $(shell cocotb-config --makefiles)/Makefile.sim

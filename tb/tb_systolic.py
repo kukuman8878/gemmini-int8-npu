@@ -135,8 +135,13 @@ async def test_en_gating(dut):
     await reset_dut(dut, n)
     A = rand_mat(n, 11)
     B = rand_mat(n, 12)
+
+    def garbage(idx, k, cycle):
+        return (0x31 + 5 * idx + cycle) & 0x7F
+
     for cycle in range(2 * n):
-        await drive_cycle(dut, n, A, B, cycle, en_on=False)
+        # en_on=False 且窗口外/内全部给非零 garbage: 任何误累加都会改变 acc
+        await drive_cycle(dut, n, A, B, cycle, en_on=False, garbage=garbage)
     got = read_c(dut, n)
     want = [[0] * n for _ in range(n)]
     fails = compare(dut, got, want, "en=0 gating")
