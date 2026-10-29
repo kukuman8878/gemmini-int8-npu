@@ -130,15 +130,35 @@ module controller #(parameter N = 4, K_WIDTH = 9) (
 - 任务完成后 `cfg_done` 清零，需重新配置才能 start（旧配置不残留）。
 - 语义决策见 §3（6 条已锁定）。
 
-## 3. 顶层握手契约（npu_top，W6 目标，草案）
+### 2.7 npu_top.sv（W6 已实现，P0 端到端门禁通过）
+
+```systemverilog
+module npu_top #(parameter N = 4) (
+  input  wire clk, rst_n,
+  input  wire cfg_valid, output wire cfg_ready,
+  input  wire [8:0] cfg_k,
+  input  wire start,
+  input  wire in_valid, output wire in_ready,
+  input  wire signed [7:0] a_vec [0:N-1], b_vec [0:N-1],
+  output wire out_valid, input  wire out_ready,
+  output wire signed [31:0] out_c [0:N*N-1],
+  output wire busy, done
+);
+```
+
+- 集成 controller + input_skew + systolic_array；`acc_clr = (state == IDLE)` 持续置位实现任务边界清零（清零覆盖整个残留窗口，见 W6a 约束：清零 ≠ 排空）。
+- 任务流：cfg → start → LOAD(K 拍切片握手) → 自动排空(2N-1 拍) → OUTPUT(out_c 稳定) → done 单拍 → IDLE。
+- §3 契约表中全部端口在此落地；`in_accept` 内部连接（`in_valid&&in_ready` → input_skew.valid）。
+
+## 3. 顶层握手契约（npu_top，W6 已实现并验证）
 
 | 信号 | 方向 | 语义 | 状态 |
 |:---|:---|:---|:---|
-| `cfg_valid/cfg_ready` | in/out | 携带 K 与 tile ID；仅 `valid&&ready` 拍生效 | 草案 |
-| `in_valid/in_ready` | in/out | 携带 A/B 边界向量；仅 `valid&&ready` 拍消耗一个逻辑拍 | 草案 |
-| `out_valid/out_ready` | out/in | 携带完整 4×4 INT32 结果；`valid&&!ready` 期间 `out_data` 必须保持稳定 | 草案 |
-| `busy` | out | 任务开始至结果握手完成期间为 1 | 草案 |
-| `done` | out | 一次结果完成握手产生的单拍脉冲 | 草案 |
+| `cfg_valid/cfg_ready` | in/out | 携带 K 与 tile ID；仅 `valid&&ready` 拍生效 | 已实现（首版仅 K 字段） |
+| `in_valid/in_ready` | in/out | 携带 A/B 切片向量；仅 `valid&&ready` 拍消耗一个逻辑拍 | 已实现 |
+| `out_valid/out_ready` | out/in | 携带完整 4×4 INT32 结果；`valid&&!ready` 期间 `out_c` 必须保持稳定 | 已实现（tb_top: test_e2e_backpressure 锁定） |
+| `busy` | out | 任务开始至结果完成握手期间为 1 | 已实现 |
+| `done` | out | 输出完成握手沿后一拍的单拍脉冲（寄存器输出） | 已实现（tb_top: test_e2e_basic 锁定） |
 
 **已锁定的语义决策（W5，实现前定稿，测试验证）**：
 

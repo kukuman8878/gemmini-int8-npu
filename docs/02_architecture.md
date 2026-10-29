@@ -51,12 +51,8 @@
 
 ## 4. 待建模块
 
-| 文件 | 职责 | 计划周 |
-|:---|:---|:---|
-| `rtl/controller.sv` | IDLE/LOAD/COMPUTE/DRAIN/OUTPUT FSM | W5 |
-| `rtl/npu_top.sv` | 系统连接、全局握手、结果输出 | W6 |
-
-（`rtl/input_skew.sv` 已于 W4 完成，见 §3。）
+全部 P0 模块已于 W6 完成（mac/pe/input_skew/systolic_array/fifo/controller/npu_top）。
+增强项（P1/P2）见项目验收文档 §1.2。
 
 ## 5. 与 Gemmini 的关系
 

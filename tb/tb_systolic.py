@@ -318,3 +318,29 @@ async def test_acc_clr(dut):
     got = await run_matmul(dut, n, A2, B2, reset=False)
     assert compare(dut, got, matmul_ref(A2, B2), "task after clr") == 0
     dut._log.info("array acc_clr ok")
+
+
+@cocotb.test()
+async def test_acc_clr_midflow(dut):
+    """流水残留时清零 (正确用法): acc_clr 覆盖整个排空窗口, 新任务结果只含新任务
+    (约束: 清零 != 排空; 若只清单拍, 残留 en=1 数据会继续累加——由本测试锁定正确用法)"""
+    n = detect_n(dut)
+    clock = Clock(dut.clk, 10, unit="ns")
+    cocotb.start_soon(clock.start())
+    await reset_dut(dut, n)
+
+    A1, B1 = rand_mat(n, 65), rand_mat(n, 66)
+    for cycle in range(n):                  # 只跑前半段, 流水中有残留
+        await drive_cycle(dut, n, A1, B1, cycle)
+
+    dut.acc_clr.value = 1                   # 残留排空期间持续清零
+    for cycle in range(n, 3 * n - 2):       # 完成剩余喂数拍 (窗口外 en=0), 排空残留
+        await drive_cycle(dut, n, A1, B1, cycle)
+    dut.acc_clr.value = 0
+    got = read_c(dut, n)
+    assert compare(dut, got, [[0] * n for _ in range(n)], "clr covering drain") == 0
+
+    A2, B2 = rand_mat(n, 67), rand_mat(n, 68)
+    got = await run_matmul(dut, n, A2, B2, reset=False)
+    assert compare(dut, got, matmul_ref(A2, B2), "midflow clr then task") == 0
+    dut._log.info("array acc_clr midflow ok")

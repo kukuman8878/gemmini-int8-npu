@@ -195,7 +195,7 @@ async def test_random(dut):
 
 @cocotb.test()
 async def test_acc_clr(dut):
-    """acc_clr 清零累加器 (任务边界), 转发不冻结"""
+    """acc_clr 清零累加器 (任务边界), 转发不冻结; 同拍有效数据被清零吞掉"""
     clock = Clock(dut.clk, 10, unit="ns")
     cocotb.start_soon(clock.start())
     await reset_dut(dut)
@@ -205,8 +205,8 @@ async def test_acc_clr(dut):
     assert dut.acc.value.to_signed() == 48
 
     dut.acc_clr.value = 1
-    await step(dut, 0, 0, 0, 0)
-    assert dut.acc.value.to_signed() == 0, "acc cleared by acc_clr"
+    await step(dut, 7, 9, 1, 1)          # 清零与有效数据同拍: 清零优先
+    assert dut.acc.value.to_signed() == 0, "acc cleared by acc_clr (data swallowed)"
     dut.acc_clr.value = 0
 
     _, _, _, _, acc = await step(dut, 3, 5, 1, 1)

@@ -97,3 +97,19 @@ Testplan -> 定向/约束随机用例 -> Driver -> DUT
 **controller**（`tb/tb_controller.py`，`make sim_controller`）：复位 IDLE/配置握手与重配置/非法 K 拒绝(0/257/511)/同拍 cfg+start 无效/LOAD 计数与输入暂停/排空 2N-1 拍/输出握手与 done 单拍脉冲/旧配置清除/busy 拒绝 cfg 与 start——全部通过。
 
 **FIFO 改内核决策**（docs/03 §2.4）：wr_en/rd_en 内核改为 valid/ready 内核（push=wr_valid&&wr_ready, pop=rd_valid&&rd_ready），设计中唯一存储流协议与顶层一致，避免 adapter 反压复杂性。
+
+## 9. npu_top 端到端验证报告（W6，P0 门禁）
+
+`tb/tb_top.py`（cocotb，顶层 `npu_top`，`make sim_top`）：
+
+| 测试 | 检查点 | 结论 |
+|:---|:---|:---|
+| test_e2e_basic | 黄金向量 tile + 完整握手 + done 单拍 + busy | 通过 |
+| test_e2e_random_k | K∈{1,2,4,8,16}（含 K>N）精确比对 | 通过 |
+| test_e2e_input_pause | LOAD 中途 in_valid=0 暂停不影响结果 | 通过 |
+| test_e2e_backpressure | out_ready=0 反压期间 out_valid 保持、out_c 稳定 | 通过 |
+| test_e2e_back_to_back | 连续任务任务边界清零（第二任务只含 C2） | 通过 |
+| test_e2e_mid_reset | 任务中途复位回 IDLE，新任务正确 | 通过 |
+| test_e2e_illegal_and_stale | 非法 K 拒绝 + 旧配置失效 | 通过 |
+
+**W6 门禁判定：P0 核心功能通过**（模块链 mac→pe→skew→阵列→fifo→controller→top 全部闭环，任务生命周期与握手机制完整验证）。
