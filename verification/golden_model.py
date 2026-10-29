@@ -2,9 +2,19 @@
 # Python 整数天然支持任意精度有符号运算, 无需处理补码/符号扩展 —— 完美的"真理"
 
 def mac_ref(acc, a, b, en):
-    """参考模型: en=1 时 acc + a*b, en=0 时 acc 保持"""
+    """参考模型: en=1 时 acc + a*b, en=0 时 acc 保持 (任意精度, 无回绕)"""
     if en:
         return acc + a * b
+    return acc
+
+
+def mac_ref_wrap(acc, a, b, en, acc_bits=32):
+    """参考模型: 与 RTL 一致的 ACC_WIDTH 位 2 补码回绕语义"""
+    if en:
+        r = (acc + a * b) & ((1 << acc_bits) - 1)
+        if r >= (1 << (acc_bits - 1)):
+            r -= (1 << acc_bits)
+        return r
     return acc
 
 

@@ -9,7 +9,7 @@ import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, Timer
 
-from golden_model import mac_ref
+from golden_model import mac_ref, mac_ref_wrap
 
 
 async def reset_dut(dut):
@@ -84,3 +84,38 @@ async def test_random_mac(dut):
 
     dut._log.info("random test done: %d ops", N)
     assert fails == 0, f"{fails} ops mismatched!"
+
+
+@cocotb.test()
+async def test_exhaustive_boundary(dut):
+    """V03 增强: 全边界组合穷举 + 溢出回绕语义锁定
+    a,b ∈ {-128,-127,-1,0,1,126,127}; acc ∈ {INT32_MIN,-2^20,0,2^20,INT32_MAX}
+    共 7x7x5=245 组, 用 32 位 2 补码回绕参考模型精确比对"""
+    clock = Clock(dut.clk, 10, unit="ns")
+    cocotb.start_soon(clock.start())
+    await reset_dut(dut)
+
+    avals = [-128, -127, -1, 0, 1, 126, 127]
+    accs = [-(2**31), -(2**20), 0, 2**20, 2**31 - 1]
+    fails = 0
+    ncases = 0
+
+    for a in avals:
+        for b in avals:
+            for acc in accs:
+                got = await do_mac(dut, a, b, acc, 1)
+                want = mac_ref_wrap(acc, a, b, 1)
+                ncases += 1
+                if got != want:
+                    fails += 1
+                    dut._log.error("MISMATCH: a=%d b=%d acc=%d -> got %d, want %d",
+                                   a, b, acc, got, want)
+                    if fails >= 5:
+                        break
+            if fails >= 5:
+                break
+        if fails >= 5:
+            break
+
+    dut._log.info("exhaustive boundary test done: %d cases", ncases)
+    assert fails == 0, f"{fails} cases mismatched!"

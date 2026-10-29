@@ -18,19 +18,23 @@
 
 ## 2. 模块端口（当前导入基线）
 
-### 2.1 mac.sv（已实现，已通过定向测试）
+### 2.1 mac.sv（已实现，参数化；已通过定向/随机/穷举边界测试）
 
 ```systemverilog
-module mac (
+module mac #(
+  parameter A_WIDTH   = 8,   // a/b 有符号位宽
+  parameter ACC_WIDTH = 32   // 累加器有符号位宽
+) (
   input  wire clk, rst_n, en,
-  input  wire signed [7:0]  a, b,
-  input  wire signed [31:0] acc_in,
-  output reg  signed [31:0] acc_out
+  input  wire signed [A_WIDTH-1:0]  a, b,
+  input  wire signed [ACC_WIDTH-1:0] acc_in,
+  output reg  signed [ACC_WIDTH-1:0] acc_out
 );
 ```
 
 - 语义：`en=1` → `acc_out <= acc_in + a*b`；`en=0` → 保持（`acc_out <= acc_in`）。
-- 所有运算 signed；乘积 16bit 自动符号扩展至 32bit。
+- 所有运算 signed；乘积 16bit 自动符号扩展至 ACC_WIDTH。
+- **溢出语义（已锁定）**：ACC_WIDTH 位 2 的补码回绕，无饱和、无溢出标志；由穷举边界测试（245 组，含 INT32_MIN/MAX 累加值）与参考模型 `mac_ref_wrap` 精确锁定。
 
 ### 2.2 pe.sv（已实现，已通过阵列级测试）
 
