@@ -72,19 +72,23 @@ module systolic_array #(parameter N = 4) (
 - skew 由外部（驱动或 input_skew）完成：A 第 i 行延迟 i 拍、B 第 j 列延迟 j 拍。
 - 薄包装实例：`systolic_4x4`（N=4，c_ij 拍平输出）、`systolic_8x8`（N=8，c_flat 输出），无重复逻辑。
 
-### 2.4 fifo.sv（已实现，接口待收紧）
+### 2.4 fifo.sv（W5 已改内核为 valid/ready，已通过随机握手测试）
 
 ```systemverilog
 module fifo #(parameter WIDTH = 8, DEPTH = 16) (
-  input  wire clk, rst_n, wr_en, rd_en,
+  input  wire clk, rst_n,
+  input  wire wr_valid, output wire wr_ready,
   input  wire [WIDTH-1:0] wr_data,
+  output wire rd_valid, input  wire rd_ready,
   output reg  [WIDTH-1:0] rd_data,
   output wire full, empty
 );
 ```
 
 - DEPTH 必须为 2 的幂且 ≥ 2（计数器法判满空；DEPTH=1 会使地址位宽非法，不支持）。
-- 当前接口为 `wr_en/rd_en`；**W5 收紧为 valid/ready 或新增 wrapper**（TODO-决策：改内核 vs 加 adapter）。
+- 协议：`push = wr_valid && wr_ready`、`pop = rd_valid && rd_ready`；`rd_valid = !empty`、`wr_ready = !full`。
+- 满态可读不可写（pop 让出空间后下拍可写）；同拍读写由 cnt 计数统一处理。
+- 复位：指针/计数清零（逻辑清空，存储阵列内容不清但 empty 门控读使旧数据不可见）。
 
 ### 2.5 input_skew.sv（W4 已实现，已通过联合测试）
 
@@ -106,6 +110,26 @@ module input_skew #(parameter N = 4, A_WIDTH = 8) (
 - 首版无背压（valid 仅门控）；停顿语义 TODO-决策见 §1。
 - 联合验证：`tb/skew_systolic_4x4.sv`（input_skew + systolic_4x4）+ `tb/tb_skew.py`。
 
+### 2.6 controller.sv（W5 已实现，已通过 FSM 全语义测试）
+
+```systemverilog
+module controller #(parameter N = 4, K_WIDTH = 9) (
+  input  wire clk, rst_n,
+  input  wire cfg_valid, output wire cfg_ready,
+  input  wire [K_WIDTH-1:0] cfg_k,
+  input  wire start,
+  input  wire in_valid, output wire in_ready, output wire in_accept,
+  output wire out_valid, input  wire out_ready,
+  output wire busy, output reg  done, output reg [1:0] state
+);
+```
+
+- 状态机：`IDLE → LOAD(K 拍接受切片) → DRAIN(2N-1 拍) → OUTPUT(握手) → IDLE`。
+- 握手：`cfg_valid/cfg_ready` 仅 IDLE 有效；`in_accept = in_valid && in_ready` 驱动 input_skew；`out_valid` 保持等待 `out_ready`。
+- `done` 为寄存器输出的单拍脉冲（输出完成握手沿后一拍置位）。
+- 任务完成后 `cfg_done` 清零，需重新配置才能 start（旧配置不残留）。
+- 语义决策见 §3（6 条已锁定）。
+
 ## 3. 顶层握手契约（npu_top，W6 目标，草案）
 
 | 信号 | 方向 | 语义 | 状态 |
@@ -116,13 +140,14 @@ module input_skew #(parameter N = 4, A_WIDTH = 8) (
 | `busy` | out | 任务开始至结果握手完成期间为 1 | 草案 |
 | `done` | out | 一次结果完成握手产生的单拍脉冲 | 草案 |
 
-**必须显式回答的语义问题（实现前逐条写死并加测试）**：
+**已锁定的语义决策（W5，实现前定稿，测试验证）**：
 
-1. 复位时是否清除 FIFO？（默认：是——逻辑清空。实现上复位只清指针/计数器，存储阵列内容不清，但 empty 门控读使旧数据不可见，语义等价；FIFO 深度参数变更时不影响该结论）
-2. `start`/`cfg` 在 busy 状态是否接受？（默认：拒绝或丢弃，由验证用例 V11 锁定行为）
-3. 输出等待期间（out_ready=0）能否启动下一任务？（默认：不允许，单任务在途）
-4. skew 由谁完成？（见 §1，W4 迁移至 input_skew.sv）
-5. `out_valid` 在哪个周期置位？（默认：DRAIN 结束且结果锁存完成后；精确拍数以仿真+波形固化）
+1. 复位时是否清除 FIFO？→ **是，逻辑清空**（指针/计数清零；存储阵列内容不清但 empty 门控读使旧数据不可见）。
+2. `cfg`/`start` 在 busy 状态是否接受？→ **拒绝**：busy 时 `cfg_ready=0`（cfg 无效），`start` 被忽略；需先完成当前任务回到 IDLE。
+3. 输出等待期间（out_ready=0）能否启动下一任务？→ **不允许**，FSM 串行：单任务在途，OUTPUT 握手完成后才回 IDLE。
+4. skew 由谁完成？→ **`input_skew.sv`**（设计中唯一 skew 点，W4 已实现）。
+5. `out_valid` 在哪个周期置位？→ **DRAIN 结束沿之后**（末切片接受沿起第 2N-1 个沿后进入 OUTPUT 态，`out_valid=1`），结果已稳定锁存。
+6. 配置时序：`cfg` 与 `start` 不能同拍生效 → cfg 先握手，`start` 于其后任一周期生效（同拍 start 无效，需下一拍再 start）。K 合法域 1…256，K=0 或 >256 视为非法配置被拒绝（`cfg_done` 不置位，start 无效）。
 
 ## 4. 已固化的黄金向量
 

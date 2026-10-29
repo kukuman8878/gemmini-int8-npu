@@ -1,67 +1,64 @@
 // =============================================================
-// fifo : synchronous FIFO, WIDTH x DEPTH, parameterized
+// fifo : 同步 valid/ready FIFO, WIDTH x DEPTH, parameterized
 //   限制: DEPTH 必须为 2 的幂且 >= 2 (计数器法判满空; DEPTH=1 地址位宽非法)
+//   协议: push = wr_valid && wr_ready; pop = rd_valid && rd_ready
+//         rd_valid = !empty, wr_ready = !full
+//   满时拒绝写 (wr_ready=0), 空时无数据可读 (rd_valid=0)
+//   同拍读写: 满态可读不可写 (pop 让出空间后下拍可写)
+//   复位: 指针/计数清零 (逻辑清空, 存储阵列内容不清但不可见)
 // =============================================================
 module fifo #(
     parameter WIDTH = 8,        // 数据位宽
     parameter DEPTH = 16        // FIFO 深度 (必须为 2 的幂, >= 2)
 ) (
-    input  wire        clk, //时钟，每跳变一次电路"走一步"
-    input  wire        rst_n,  //复位（低电平有效）
-    input  wire        wr_en,  //写使能 =1 时表示"我要写入数据"
-    input  wire        rd_en,  //读使能 =1 时表示"我要读取数据"
-    input  wire [WIDTH-1:0] wr_data, //要写进去的数据
-    output reg  [WIDTH-1:0] rd_data,  //读出来的数据
-    output wire        full,  //满了，不能再写
-    output wire        empty
+    input  wire clk,
+    input  wire rst_n,
+    input  wire wr_valid,
+    output wire wr_ready,
+    input  wire [WIDTH-1:0] wr_data,
+    output wire rd_valid,
+    input  wire rd_ready,
+    output reg  [WIDTH-1:0] rd_data,
+    output wire full,
+    output wire empty
 );
 
-// ---------------- internal signals ----------------
-localparam ADDRW = $clog2(DEPTH);   // 地址位宽: 16→4, 8→3, 自动算
+localparam ADDRW = $clog2(DEPTH);
 
-reg [WIDTH-1:0] mem [0:DEPTH-1];    // 寄存器阵列 (RAM)
-reg [ADDRW-1:0] wr_ptr;             // 写指针
-reg [ADDRW-1:0] rd_ptr;             // 读指针
-reg [ADDRW:0]   cnt;                // 计数, 0~DEPTH (多1位表示"满")
+reg [WIDTH-1:0] mem [0:DEPTH-1];
+reg [ADDRW-1:0] wr_ptr;
+reg [ADDRW-1:0] rd_ptr;
+reg [ADDRW:0]   cnt;
 
-// ---------------- write logic ----------------
+wire push = wr_valid && !full;
+wire pop  = rd_valid && rd_ready;
+
+assign wr_ready = !full;
+assign rd_valid = !empty;
+assign full  = (cnt == DEPTH);
+assign empty = (cnt == 0);
+
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         wr_ptr <= {ADDRW{1'b0}};
-    end else if (wr_en && !full) begin
-        mem[wr_ptr] <= wr_data;          // 写数据到当前写指针位置
-        wr_ptr      <= wr_ptr + 1'b1;    // 写指针 +1 (ADDRW 位自动回绕)
-    end
-end
-
-// ---------------- read logic ----------------
-always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
         rd_ptr <= {ADDRW{1'b0}};
-    end else if (rd_en && !empty) begin
-        rd_ptr <= rd_ptr + 1'b1;         // 读指针 +1
-    end
-end
-
-// ---------------- element counter ----------------
-always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-        cnt <= {(ADDRW+1){1'b0}};
+        cnt    <= {(ADDRW+1){1'b0}};
     end else begin
-        case ({wr_en && !full, rd_en && !empty})
-            2'b10: cnt <= cnt + 1'b1;    // 只写: cnt+1
-            2'b01: cnt <= cnt - 1'b1;    // 只读: cnt-1
-            default: cnt <= cnt;         // 同时读写 or 都不动: 不变
+        if (push) begin
+            mem[wr_ptr] <= wr_data;
+            wr_ptr      <= wr_ptr + 1'b1;
+        end
+        if (pop) begin
+            rd_ptr <= rd_ptr + 1'b1;
+        end
+        case ({push, pop})
+            2'b10: cnt <= cnt + 1'b1;
+            2'b01: cnt <= cnt - 1'b1;
+            default: cnt <= cnt;
         endcase
     end
 end
 
-// ---------------- status flags ----------------
-assign full  = (cnt == DEPTH);           // 8 个单元全满
-assign empty = (cnt == 0);               // 无数据
-
-// ---------------- read data output ----------------
-// 组合直出: empty 时输出清零 (rd_en 上升沿时 rd_ptr 尚未更新, 输出的是旧数据)
 always @(*) begin
     if (!empty)
         rd_data = mem[rd_ptr];

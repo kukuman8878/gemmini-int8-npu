@@ -29,11 +29,11 @@ Testplan -> 定向/约束随机用例 -> Driver -> DUT
 | V04 | K=1、2、N/2、N-1 部分归约 | 归约长度与排空时序 | 阵列级已覆盖（tb_systolic: test_partial_k）；K∈{1,2,4,8,16}（含 K>N）已覆盖（tb_skew: test_random_k）；K=64/256 待 controller 支持 |
 | V05 | 行列边界块（零填充） | padding 不产生额外有效输出 | 黄金向量 2×2→4×4 零填充已覆盖（tb_skew: test_golden_2x2） |
 | V06 | 随机矩阵，固定种子集合 | 数据相关性和累加正确性 | 阵列级已跑（N=4/8，各 20 对，种子 2024） |
-| V07 | 输入暂停/输出反压 | 数据稳定与全局同步停顿 | 待建（依赖 W5 停顿语义决策，见 docs/03 §1） |
-| V08 | FIFO 空、满、同时读写 | 丢失/重复/溢出及指针回绕 | 已通过（含回绕用例 test_write_read_wrap） |
-| V09 | 连续任务 | 旧状态泄漏、busy/done 时序 | 阵列级已覆盖累加语义（test_back_to_back）；busy/done 待顶层 |
-| V10 | LOAD/COMPUTE 时复位 | 复位与状态恢复 | 阵列级已覆盖（test_mid_reset）；FIFO 已有中途复位 |
-| V11 | 非法配置与 busy 时 start | 设计定义的拒绝/响应行为 | 待建（W5-W6 顶层） |
+| V07 | 输入暂停/输出反压 | 数据稳定与全局同步停顿 | 输入暂停已覆盖（controller 级 test_load_stall_and_drain + skew 级 test_en_gating）；输出反压已覆盖（test_output_handshake）；流水冻结语义待 W5+ 停顿决策 |
+| V08 | FIFO 空、满、同时读写 | 丢失/重复/溢出及指针回绕 | 已通过（valid/ready 化后 7 项测试含随机握手 scoreboard） |
+| V09 | 连续任务 | 旧状态泄漏、busy/done 时序 | 阵列/skew 级累加语义已覆盖；done 单拍/旧配置清除已覆盖（test_output_handshake） |
+| V10 | LOAD/COMPUTE 时复位 | 复位与状态恢复 | 阵列/skew/PE 级已覆盖；controller 级复位待 W6 顶层联调 |
+| V11 | 非法配置与 busy 时 start | 设计定义的拒绝/响应行为 | 已通过（tb_controller: test_illegal_cfg K=0/257/511、test_busy_reject） |
 | V12 | 回归故障注入（独立分支） | Scoreboard/SVA 是否能捕获错误 | 待建 |
 
 补充：en 门控专项已覆盖——en=0 且数据非零时不累加（tb_systolic: test_en_gating 全程非零垃圾数据；test_partial_k 的窗口外垃圾数据段双保险；test_en_asym 覆盖 A/B 单通道有效的不对称组合）。
@@ -89,3 +89,11 @@ Testplan -> 定向/约束随机用例 -> Driver -> DUT
 | test_mid_reset | 呈现中途复位后只含新任务结果 | 通过 |
 
 时序口径：K 拍呈现 + (2N-1) 拍排空；该口径经黄金模型逐元素比对验证，与 docs/03 §2.5 一致。
+
+## 8. FIFO / controller 验证报告（W5）
+
+**fifo**（`tb/tb_fifo.py`，`make sim_fifo`）：复位/填充排空(16)/满拒写/空拒读/同时读写/指针回绕/2000 拍随机握手（Python deque 参考模型逐拍比对）——全部通过。
+
+**controller**（`tb/tb_controller.py`，`make sim_controller`）：复位 IDLE/配置握手与重配置/非法 K 拒绝(0/257/511)/同拍 cfg+start 无效/LOAD 计数与输入暂停/排空 2N-1 拍/输出握手与 done 单拍脉冲/旧配置清除/busy 拒绝 cfg 与 start——全部通过。
+
+**FIFO 改内核决策**（docs/03 §2.4）：wr_en/rd_en 内核改为 valid/ready 内核（push=wr_valid&&wr_ready, pop=rd_valid&&rd_ready），设计中唯一存储流协议与顶层一致，避免 adapter 反压复杂性。
