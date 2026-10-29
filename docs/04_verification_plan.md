@@ -61,3 +61,16 @@ Testplan -> 定向/约束随机用例 -> Driver -> DUT
 | 穷举边界 | a,b ∈ {-128,-127,-1,0,1,126,127} × acc ∈ {INT32_MIN,-2^20,0,2^20,INT32_MAX}（245 组） | 通过，与 `mac_ref_wrap` 32 位回绕模型精确一致 |
 
 **溢出语义结论**：累加器溢出按 ACC_WIDTH 位 2 的补码回绕，无饱和/无标志；该行为已写入 docs/03 §2.1 并被测试锁定。K=256 最坏累加幅值上界为 256×16384=2^22，正常 tile 工作不触发 32 位回绕。
+
+## 6. PE 单模块验证报告（W3）
+
+`tb/tb_pe.py`（cocotb，顶层 `pe`，`make sim_pe`；波形 `make sim_pe WAVES=1`）：
+
+| 测试 | 检查点 | 结论 |
+|:---|:---|:---|
+| test_reset_state | 复位后 a_out/b_out/en 标志/acc 全清零 | 通过 |
+| test_forwarding | a/b 与 en 标志 1 拍寄存转发（含 ±128/127/0 边界） | 通过 |
+| test_accumulate | en_a=en_b=1 连续累加，与 `mac_ref_wrap` 回绕模型比对（含 -128×-128 极值） | 通过 |
+| test_en_gating | (0,1)/(1,0)/(0,0) 三种无效组合且数据非零时 acc 保持 | 通过 |
+| test_mid_reset | 累加中复位：acc 与转发寄存器清零 | 通过 |
+| test_random | 1000 拍随机数据 + 随机 en 组合，Scoreboard 逐拍比对（含转发/标志/累加全量比对） | 通过 |
