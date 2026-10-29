@@ -1,0 +1,27 @@
+# 仿真/构建产物
+obj_dir/
+sim_build/
+__pycache__/
+*.pyc
+results.xml
+*.vcd
+*.fst
+*.lxt
+*.log
+logs/
+
+# cocotb / verilator
+*.o
+*.d
+
+# 综合产物
+synthesis/reports/*
+!synthesis/reports/.gitkeep
+synthesis/flow/*/results/
+*.vg
+*.net
+*.syn.v
+
+# 编辑器
+*.swp
+.vscode/
