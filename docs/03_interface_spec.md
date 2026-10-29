@@ -51,7 +51,7 @@ module pe (
 
 - `a_out/b_out` 与 `a_in/b_in` 为 1 拍寄存转发；`en` 标志随数据同拍传递。
 - `en_a && en_b` 同时有效才累加；否则 `acc` 保持。
-- 累加为内联实现（未实例化 mac.sv），但语义与 mac.sv 一致：32 位 2 补码回绕。单 tile 最坏幅值上界 N×16384（N≤8 时 ≪2^31），实际不会触发回绕；mac 级回绕语义由 test_exhaustive_boundary 锁定。
+- 累加为内联实现（未实例化 mac.sv），但语义与 mac.sv 一致：32 位 2 补码回绕。单 tile 最坏幅值上界 K×16384（K≤256 时 ≤2^22 ≪2^31），实际不会触发回绕；mac 级回绕语义由 test_exhaustive_boundary 锁定。
 
 ### 2.3 systolic_array.sv（已实现，参数化 N×N）
 
