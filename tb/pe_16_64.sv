@@ -7,6 +7,7 @@
 module pe_16_64 (
     input  wire clk,
     input  wire rst_n,
+    input  wire acc_clr,
     input  wire signed [15:0] a_in,
     input  wire signed [15:0] b_in,
     input  wire en_a,
@@ -21,6 +22,7 @@ module pe_16_64 (
 pe #(.A_WIDTH(16), .ACC_WIDTH(64)) u_pe (
     .clk      (clk),
     .rst_n    (rst_n),
+    .acc_clr  (acc_clr),
     .a_in     (a_in),
     .b_in     (b_in),
     .en_a     (en_a),

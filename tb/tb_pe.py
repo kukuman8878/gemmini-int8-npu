@@ -21,6 +21,7 @@ def dut_widths(dut):
 
 async def reset_dut(dut):
     dut.rst_n.value = 0
+    dut.acc_clr.value = 0
     dut.a_in.value = 0
     dut.b_in.value = 0
     dut.en_a.value = 0
@@ -190,3 +191,24 @@ async def test_random(dut):
     else:
         dut._log.info("random PE test done: %d cycles", done)
     assert fails == 0, f"{fails} mismatches!"
+
+
+@cocotb.test()
+async def test_acc_clr(dut):
+    """acc_clr 清零累加器 (任务边界), 转发不冻结"""
+    clock = Clock(dut.clk, 10, unit="ns")
+    cocotb.start_soon(clock.start())
+    await reset_dut(dut)
+
+    for _ in range(3):
+        await step(dut, 4, 4, 1, 1)
+    assert dut.acc.value.to_signed() == 48
+
+    dut.acc_clr.value = 1
+    await step(dut, 0, 0, 0, 0)
+    assert dut.acc.value.to_signed() == 0, "acc cleared by acc_clr"
+    dut.acc_clr.value = 0
+
+    _, _, _, _, acc = await step(dut, 3, 5, 1, 1)
+    assert acc == 15, f"accumulate after clear: got {acc}"
+    dut._log.info("acc_clr ok")

@@ -5,6 +5,7 @@
 module skew_systolic_4x4 (
     input  wire clk,
     input  wire rst_n,
+    input  wire acc_clr,
     input  wire valid,
     input  wire signed [7:0] a_vec [0:3],
     input  wire signed [7:0] b_vec [0:3],
@@ -34,6 +35,7 @@ input_skew #(.N(4), .A_WIDTH(8)) u_skew (
 systolic_4x4 u_sys (
     .clk   (clk),
     .rst_n (rst_n),
+    .acc_clr (acc_clr),
     .a_row (a_row),
     .b_col (b_col),
     .en_a  (en_a),

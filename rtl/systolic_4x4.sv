@@ -6,6 +6,7 @@
 module systolic_4x4 (
     input  wire clk,
     input  wire rst_n,
+    input  wire acc_clr,
     input  wire signed [7:0] a_row [0:3],   // 4 行的左端输入
     input  wire signed [7:0] b_col [0:3],   // 4 列的上端输入
     input  wire        en_a  [0:3],         // 每行数据有效标志 (随A斜流)
@@ -22,6 +23,7 @@ wire signed [31:0] c_flat [0:15];
 systolic_array #(.N(4)) u_sys (
     .clk    (clk),
     .rst_n  (rst_n),
+    .acc_clr (acc_clr),
     .a_row  (a_row),
     .b_col  (b_col),
     .en_a   (en_a),

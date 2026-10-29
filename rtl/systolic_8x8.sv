@@ -5,6 +5,7 @@
 module systolic_8x8 (
     input  wire clk,
     input  wire rst_n,
+    input  wire acc_clr,
     input  wire signed [7:0] a_row [0:7],
     input  wire signed [7:0] b_col [0:7],
     input  wire        en_a  [0:7],
@@ -15,6 +16,7 @@ module systolic_8x8 (
 systolic_array #(.N(8)) u_sys (
     .clk    (clk),
     .rst_n  (rst_n),
+    .acc_clr (acc_clr),
     .a_row  (a_row),
     .b_col  (b_col),
     .en_a   (en_a),

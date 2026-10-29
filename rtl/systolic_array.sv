@@ -10,6 +10,7 @@ module systolic_array #(
 ) (
     input  wire clk,
     input  wire rst_n,
+    input  wire acc_clr,    // 全阵列累加器清零 (任务边界)
     input  wire signed [7:0] a_row [0:N-1],
     input  wire signed [7:0] b_col [0:N-1],
     input  wire        en_a  [0:N-1],
@@ -45,6 +46,7 @@ generate
             pe u_pe (
                 .clk   (clk),
                 .rst_n (rst_n),
+                .acc_clr (acc_clr),
                 .a_in  (a_h[i][j]),
                 .b_in  (b_v[i][j]),
                 .en_a  (en_a_h[i][j]),

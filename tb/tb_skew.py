@@ -19,6 +19,7 @@ N = 4
 
 async def reset_dut(dut):
     dut.rst_n.value = 0
+    dut.acc_clr.value = 0
     dut.valid.value = 0
     for i in range(N):
         dut.a_vec[i].value = 0

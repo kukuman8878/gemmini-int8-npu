@@ -25,6 +25,7 @@ def detect_n(dut):
 
 async def reset_dut(dut, n):
     dut.rst_n.value = 0
+    dut.acc_clr.value = 0
     for i in range(n):
         dut.a_row[i].value = 0
         dut.b_col[i].value = 0
@@ -292,3 +293,28 @@ async def test_random_matmul(dut):
 
     dut._log.info("random matmul done: %d pairs of %dx%d", NPAIRS, n, n)
     assert fails == 0, f"{fails} mismatches!"
+
+
+@cocotb.test()
+async def test_acc_clr(dut):
+    """acc_clr 全阵列清零 (任务边界), 清零后新任务结果正确"""
+    n = detect_n(dut)
+    clock = Clock(dut.clk, 10, unit="ns")
+    cocotb.start_soon(clock.start())
+    A = rand_mat(n, 55)
+    B = rand_mat(n, 56)
+    got = await run_matmul(dut, n, A, B)
+    assert compare(dut, got, matmul_ref(A, B), "before clr") == 0
+
+    dut.acc_clr.value = 1
+    await RisingEdge(dut.clk)
+    await Timer(1, unit="step")
+    dut.acc_clr.value = 0
+    got = read_c(dut, n)
+    assert compare(dut, got, [[0] * n for _ in range(n)], "after clr") == 0
+
+    A2 = rand_mat(n, 57)
+    B2 = rand_mat(n, 58)
+    got = await run_matmul(dut, n, A2, B2, reset=False)
+    assert compare(dut, got, matmul_ref(A2, B2), "task after clr") == 0
+    dut._log.info("array acc_clr ok")
