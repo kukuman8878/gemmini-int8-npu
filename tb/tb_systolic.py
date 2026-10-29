@@ -63,6 +63,12 @@ async def drive_cycle(dut, n, A, B, cycle, en_on=True, garbage=None, k_limit=Non
     await Timer(1, unit="step")
 
 
+async def drain(dut, n):
+    """空跑 n 拍: 让流水线里残余数据完全流走后再采样"""
+    for cycle in range(n):
+        await drive_cycle(dut, n, [[0] * n for _ in range(n)], [[0] * n for _ in range(n)], cycle)
+
+
 async def drive_cycle_asym(dut, n, A, B, cycle, a_on, b_on, garbage):
     """A/B 通道独立 en 控制的斜排喂数 (测试单通道门控)"""
     for i in range(n):
@@ -168,8 +174,11 @@ async def test_en_asym(dut):
 
     zero = [[0] * n for _ in range(n)]
     await drive_asym(True, False)    # 相位1: A 有效, B 无效(垃圾数据)
+    await drain(dut, n)              # 排空流水再采样
     fails = compare(dut, read_c(dut, n), zero, "en-asym(A on)")
+    await reset_dut(dut, n)          # 相位间复位, 故障定位互不污染
     await drive_asym(False, True)    # 相位2: A 无效(垃圾数据), B 有效
+    await drain(dut, n)
     fails += compare(dut, read_c(dut, n), zero, "en-asym(B on)")
     assert fails == 0, f"{fails} mismatches in en-asym test"
 
