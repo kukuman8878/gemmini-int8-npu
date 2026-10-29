@@ -185,8 +185,19 @@ async def test_random_handshake(dut):
     cycles = 2000
 
     for cycle in range(cycles):
-        wv = random.choice([0, 0, 1, 1, 1])
-        rr = random.choice([0, 1, 1])
+        # 占用率交叉校验: 模型长度与 DUT full/empty 必须一致
+        # (可捕获 wr_ready/rd_valid 输出错误而内部计数正确的缺陷)
+        if (len(model) == 0) != bool(int(dut.empty.value)):
+            fails += 1
+            dut._log.error("cycle %d: empty flag %d vs model len %d",
+                           cycle, int(dut.empty.value), len(model))
+        if (len(model) == 16) != bool(int(dut.full.value)):
+            fails += 1
+            dut._log.error("cycle %d: full flag %d vs model len %d",
+                           cycle, int(dut.full.value), len(model))
+
+        wv = random.choice([0, 1, 1, 1])   # push 偏多: 稳态趋满, 覆盖满态边界
+        rr = random.choice([0, 0, 1])      # pop 偏少
         data = 0
         if wv:
             data = wr_seq & 0xFF
@@ -198,8 +209,19 @@ async def test_random_handshake(dut):
         await Timer(1, unit="step")
         wr_ready_pre = int(dut.wr_ready.value)   # 沿前状态
         rd_valid_pre = int(dut.rd_valid.value)
+        empty_pre = int(dut.empty.value)
+        full_pre = int(dut.full.value)
         push = wv and wr_ready_pre
         pop = rr and rd_valid_pre
+
+        # 正确协议下: push 必然 !full (wr_ready 门控), pop 必然 !empty (rd_valid 门控)
+        # 若推得握手发生但标志矛盾, 说明 ready/valid 输出被破坏
+        if push and full_pre:
+            fails += 1
+            dut._log.error("cycle %d: push inferred but full flag set", cycle)
+        if pop and empty_pre:
+            fails += 1
+            dut._log.error("cycle %d: pop inferred but empty flag set", cycle)
 
         if pop:
             if len(model) == 0:

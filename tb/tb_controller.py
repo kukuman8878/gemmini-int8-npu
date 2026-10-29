@@ -116,6 +116,42 @@ async def test_start_flow(dut):
 
 
 @cocotb.test()
+async def test_reconfig_same_cycle(dut):
+    """已配置(IDLE)时同拍 cfg+start: start 无效, cfg 接收; 下拍 start 用新 K (决策6角落)"""
+    clock = Clock(dut.clk, 10, unit="ns")
+    cocotb.start_soon(clock.start())
+    await reset_dut(dut)
+
+    # 先配置 K=4 (不启动)
+    dut.cfg_k.value = 4
+    dut.cfg_valid.value = 1
+    await edge(dut)
+    dut.cfg_valid.value = 0
+    assert int(dut.state.value) == 0
+
+    # 已配置状态下同拍 cfg(K=2) + start -> start 必须无效
+    dut.cfg_k.value = 2
+    dut.cfg_valid.value = 1
+    dut.start.value = 1
+    await edge(dut)
+    dut.cfg_valid.value = 0
+    dut.start.value = 0
+    assert int(dut.state.value) == 0, "same-cycle reconfig+start must not start"
+
+    # 下拍 start -> 用新 K=2: 2 拍接受后进入 DRAIN
+    dut.start.value = 1
+    await edge(dut)
+    dut.start.value = 0
+    assert int(dut.state.value) == 1
+    for _ in range(2):
+        dut.in_valid.value = 1
+        await edge(dut)
+    dut.in_valid.value = 0
+    assert int(dut.state.value) == 2, "DRAIN after 2 accepts (new K=2 effective)"
+    dut._log.info("reconfig same-cycle corner ok")
+
+
+@cocotb.test()
 async def test_load_stall_and_drain(dut):
     """LOAD 计数只在握手拍前进 (输入暂停不推进); K 拍后进入 DRAIN 恰好 2N-1 拍"""
     clock = Clock(dut.clk, 10, unit="ns")

@@ -147,7 +147,7 @@ module controller #(parameter N = 4, K_WIDTH = 9) (
 3. 输出等待期间（out_ready=0）能否启动下一任务？→ **不允许**，FSM 串行：单任务在途，OUTPUT 握手完成后才回 IDLE。
 4. skew 由谁完成？→ **`input_skew.sv`**（设计中唯一 skew 点，W4 已实现）。
 5. `out_valid` 在哪个周期置位？→ **DRAIN 结束沿之后**（末切片接受沿起第 2N-1 个沿后进入 OUTPUT 态，`out_valid=1`），结果已稳定锁存。
-6. 配置时序：`cfg` 与 `start` 不能同拍生效 → cfg 先握手，`start` 于其后任一周期生效（同拍 start 无效，需下一拍再 start）。K 合法域 1…256，K=0 或 >256 视为非法配置被拒绝（`cfg_done` 不置位，start 无效）。
+6. 配置时序：`cfg` 与 `start` 不能同拍生效 → cfg 先握手，`start` 于其后任一周期生效（同拍 start 无效，需下一拍再 start；IDLE 中已有配置时同拍 cfg+start 亦无效，本拍 cfg 照常接收、start 顺延）。K 合法域 1…256，K=0 或 >256 视为非法配置被拒绝（`cfg_done` 不置位，start 无效）。
 
 ## 4. 已固化的黄金向量
 

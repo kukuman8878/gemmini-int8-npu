@@ -4,13 +4,13 @@
 //   语义决策 (docs/03 §3, W5 锁定):
 //   - busy 时拒绝 cfg (cfg_ready=0) 与 start (忽略)
 //   - 输出等待期间不允许下一任务 (FSM 串行)
-//   - done = 输出完成握手同拍的单拍脉冲
+//   - done = 输出完成握手沿后一拍的单拍脉冲 (寄存器输出)
 //   - out_valid 在 DRAIN 结束沿后置位 (结果已稳定)
 //   - cfg 与 start 不能同拍生效; K 合法域 1..256, 非法 cfg 被拒绝
 // =============================================================
 module controller #(
-    parameter N = 4,            // 阵列维度 (排空周期 2N-1)
-    parameter K_WIDTH = 9       // K 编码位宽 (1..256)
+    parameter N = 4,            // 阵列维度 (排空周期 2N-1); 约束: N >= 2
+    parameter K_WIDTH = 9       // K 编码位宽 (1..256); 约束: K_WIDTH >= 9
 ) (
     input  wire clk,
     input  wire rst_n,
@@ -71,7 +71,8 @@ always @(posedge clk or negedge rst_n) begin
                     k_reg    <= cfg_k;
                     cfg_done <= 1'b1;
                 end
-                if (start && cfg_done) begin
+                // 决策6: 同拍 cfg+start 时 start 无效 (本拍 cfg 仍被接收)
+                if (start && cfg_done && !cfg_valid) begin
                     state     <= S_LOAD;
                     k_cnt     <= {K_WIDTH{1'b0}};
                     drain_cnt <= {DR_CNT_W{1'b0}};
