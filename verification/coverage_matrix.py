@@ -2,6 +2,7 @@
 # verification/coverage_matrix.py : P0 覆盖矩阵核对
 #   输出 V01-V12 用例 x 覆盖测试的矩阵, 并检查每个 bin 至少有一个覆盖项
 import os
+import re
 import sys
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -74,7 +75,12 @@ def main():
                 continue
             module, _, func = ref.rpartition(".")
             tb_path = os.path.join(REPO, "tb", module + ".py")
-            if not os.path.isfile(tb_path) or f"async def {func}" not in open(tb_path).read():
+            if not os.path.isfile(tb_path):
+                missing_refs.append(f"{case}: {ref} (tb 文件不存在)")
+                continue
+            with open(tb_path, encoding="utf-8") as f:
+                content = f.read()
+            if not re.search(rf"^async def {re.escape(func)}\s*\(", content, re.M):
                 missing_refs.append(f"{case}: {ref}")
         print(f"{case:<32} {len(tests):<8} {', '.join(tests[:3])}"
               + (" ..." if len(tests) > 3 else ""))
