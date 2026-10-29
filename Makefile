@@ -4,8 +4,11 @@
 SIM ?= icarus
 TOPLEVEL_LANG ?= verilog
 
-RTL := rtl
+RTL ?= rtl
 TB := tb
+
+SEED ?= 2024       # 随机回归种子 (sim_top_seeded)
+PAIRS ?= 20        # 每种 K 的随机 tile 对数 (sim_top_seeded)
 
 MAC_SRCS  := $(RTL)/mac.sv
 FIFO_SRCS := $(RTL)/fifo.sv
@@ -77,6 +80,13 @@ sim_top:
 	  COCOTB_TEST_MODULES=tb_top \
 	  VERILOG_SOURCES="$(RTL)/controller.sv $(RTL)/input_skew.sv $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/npu_top.sv"
 
+# 批量随机回归入口 (SEED/PAIRS 由环境传入, 见 verification/random_regression.py)
+sim_top_seeded:
+	SEED=$(SEED) PAIRS=$(PAIRS) $(MAKE) sim COCOTB_TOPLEVEL=npu_top SIM_BUILD=sim_build/$@ \
+	  COCOTB_RESULTS_FILE=sim_build/$@/results.xml \
+	  COCOTB_TEST_MODULES=tb_regression \
+	  VERILOG_SOURCES="$(RTL)/controller.sv $(RTL)/input_skew.sv $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/npu_top.sv"
+
 # regress: 依次跑全部仿真, 每次输出独立日志
 # 注: 不能命名为 regression —— cocotb Makefile.inc 中 sim 依赖同名目标, 会互相覆盖
 .PHONY: regress
@@ -97,6 +107,11 @@ regress:
 .PHONY: lint
 lint:
 	verilator --lint-only -Wall -Wno-fatal -Wno-MULTITOP $(RTL)/*.sv $(TB)/pe_16_64.sv $(TB)/skew_systolic_4x4.sv
+
+# V12 故障注入 (脚本用 RTL= 覆盖在 /tmp 变异副本上运行)
+.PHONY: fault_inject
+fault_inject:
+	bash scripts/fault_injection.sh
 
 .PHONY: synth
 synth:

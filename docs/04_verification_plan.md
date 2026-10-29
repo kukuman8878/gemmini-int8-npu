@@ -34,7 +34,7 @@ Testplan -> 定向/约束随机用例 -> Driver -> DUT
 | V09 | 连续任务 | 旧状态泄漏、busy/done 时序 | 阵列/skew 级累加语义已覆盖；done 单拍/旧配置清除已覆盖（test_output_handshake） |
 | V10 | LOAD/COMPUTE 时复位 | 复位与状态恢复 | 阵列/skew/PE 级已覆盖；controller 级复位待 W6 顶层联调 |
 | V11 | 非法配置与 busy 时 start | 设计定义的拒绝/响应行为 | 已通过（tb_controller: test_illegal_cfg K=0/257/511、test_busy_reject） |
-| V12 | 回归故障注入（独立分支） | Scoreboard/SVA 是否能捕获错误 | 待建 |
+| V12 | 回归故障注入（独立分支） | Scoreboard/SVA 是否能捕获错误 | 已覆盖：`make fault_inject`（/tmp 变异副本 en 门控破坏 → 回归正确失败）+ 历轮 agent 突变验证（docs/08_bug_log.md） |
 
 补充：en 门控专项已覆盖——en=0 且数据非零时不累加（tb_systolic: test_en_gating 全程非零垃圾数据；test_partial_k 的窗口外垃圾数据段双保险；test_en_asym 覆盖 A/B 单通道有效的不对称组合）。
 
@@ -113,3 +113,16 @@ Testplan -> 定向/约束随机用例 -> Driver -> DUT
 | test_e2e_illegal_and_stale | 非法 K 拒绝 + 旧配置失效 | 通过 |
 
 **W6 门禁判定：P0 核心功能通过**（模块链 mac→pe→skew→阵列→fifo→controller→top 全部闭环，任务生命周期与握手机制完整验证）。
+
+## 10. 验证平台组件（W7）
+
+| 组件 | 位置 | 说明 |
+|:---|:---|:---|
+| Scoreboard | `verification/scoreboard.py` | 逐元素精确比对计分板（log 注入、失败明细、统计）；tb_top/tb_skew/tb_systolic 经 `tb_common.py` 复用 |
+| Driver/Monitor | `tb/tb_common.py` | npu_top 端到端共享助手（reset/cfg/start/load_slices/wait_and_read/run_task） |
+| 批量随机回归 | `verification/random_regression.py` + `tb/tb_regression.py` + `make sim_top_seeded` | SEED×K{1,2,4,8,16}×PAIRS；日志记录 DUT rev/命令/种子/逐种子结果（`logs/random_regression_<rev>.json`） |
+| 覆盖矩阵 | `verification/coverage_matrix.py` | V01–V12 bin 映射核对，未覆盖 bin 退出码 1 |
+| 故障注入 | `scripts/fault_injection.sh` + `make fault_inject` | /tmp 变异副本（不触碰工作区），验证回归捕获缺陷 |
+| Bug 追踪 | `docs/08_bug_log.md` | 13 条真实缺陷（现象/触发用例/根因/修复 commit/回归） |
+
+**计划口径**：每个关键配置 ≥100 个可复现随机种子（`python3 verification/random_regression.py --seeds 100 --pairs 1` 可达 100 种子 × 5 K × 1 对 = 500 tile）；演示运行 5 种子 × 5 K × 2 对通过（`logs/random_regression_*.json`）。

@@ -57,6 +57,7 @@ make sim_skew     # cocotb: input_skew+4x4 联合 (黄金向量/K随机含K>N/�
 make sim_array     # cocotb: 4x4 脉动阵列直接驱动 (定向/随机/零矩阵/en门控/部分K/连续任务/中途复位)
 make sim_array8    # cocotb: 8x8 脉动阵列
 make regress       # 全部 P0 仿真 + 回归日志
+make fault_inject  # V12: 故障注入 (验证回归能捕获缺陷)
 ```
 
 ## 验证口径
