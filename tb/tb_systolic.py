@@ -64,7 +64,8 @@ async def drive_cycle(dut, n, A, B, cycle, en_on=True, garbage=None, k_limit=Non
 
 
 async def drain(dut, n):
-    """空跑 n 拍: 让流水线里残余数据完全流走后再采样"""
+    """空跑 n 拍: 让流水线残余数据流过, 保证采样时 acc 不受残余影响
+    (en 门控 + 零数据乘加, 不改变 acc)"""
     for cycle in range(n):
         await drive_cycle(dut, n, [[0] * n for _ in range(n)], [[0] * n for _ in range(n)], cycle)
 

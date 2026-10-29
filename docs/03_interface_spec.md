@@ -10,7 +10,7 @@
 |:---|:---|:---|
 | 复位 | 现有导入模块为**异步低有效**（`negedge rst_n`）；计划统一为**同步高有效**（`posedge rst`） | **TODO-决策**（W2/W3 收紧时定死，全仓库统一） |
 | 时钟 | 单时钟域 `clk`，无 CDC | 已定 |
-| 位宽 | A/B = signed 8bit；乘积 = signed 16bit；累加 = signed 32bit | 已定 |
+| 位宽 | A/B = signed 8bit；乘积 = signed 16bit；累加 = signed 32bit（默认值；mac.sv 已参数化 A_WIDTH/ACC_WIDTH） | 已定 |
 | K 范围 | 1…256（单 tile 归约长度） | 已定 |
 | skew 归属 | 左/上边界错位由 `input_skew.sv` **或** 测试驱动完成，二者只能取其一 | 已定契约；当前实现（周练习 TB）由驱动端完成，W4 迁移到 `input_skew.sv` |
 | 无效数据 | 无效拍（en=0）不得更新累加器 | 已定（当前 PE 实现：en=0 仅门控 acc，流水寄存器照常移位） |
@@ -33,7 +33,7 @@ module mac #(
 ```
 
 - 语义：`en=1` → `acc_out <= acc_in + a*b`；`en=0` → 保持（`acc_out <= acc_in`）。
-- 所有运算 signed；乘积 16bit 自动符号扩展至 ACC_WIDTH。
+- 所有运算 signed；乘积 2×A_WIDTH bit（默认参数下为 16bit）自动符号扩展至 ACC_WIDTH。
 - **溢出语义（已锁定）**：ACC_WIDTH 位 2 的补码回绕，无饱和、无溢出标志；由穷举边界测试（245 组，含 INT32_MIN/MAX 累加值）与参考模型 `mac_ref_wrap` 精确锁定。
 
 ### 2.2 pe.sv（已实现，已通过阵列级测试）
@@ -51,6 +51,7 @@ module pe (
 
 - `a_out/b_out` 与 `a_in/b_in` 为 1 拍寄存转发；`en` 标志随数据同拍传递。
 - `en_a && en_b` 同时有效才累加；否则 `acc` 保持。
+- 累加为内联实现（未实例化 mac.sv），但语义与 mac.sv 一致：32 位 2 补码回绕。单 tile 最坏幅值上界 N×16384（N≤8 时 ≪2^31），实际不会触发回绕；mac 级回绕语义由 test_exhaustive_boundary 锁定。
 
 ### 2.3 systolic_array.sv（已实现，参数化 N×N）
 
