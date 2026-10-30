@@ -136,7 +136,10 @@ regress:
 lint:
 	verilator --lint-only -Wall -Wno-fatal -Wno-MULTITOP -Wno-SYNCASYNCNET \
 	  $(RTL)/*.sv $(TB)/pe_16_64.sv $(TB)/skew_systolic_4x4.sv \
-	  $(TB)/npu_top_assert.sv $(TB)/pe_assert.sv $(TB)/fifo_assert.sv
+	  $(TB)/npu_top_assert.sv $(TB)/pe_assert.sv $(TB)/fifo_assert.sv $(TB)/equiv_wrap.sv \
+	  synthesis/flow/synth_view/input_skew_sv.sv \
+	  synthesis/flow/synth_view/systolic_array_sv.sv \
+	  synthesis/flow/synth_view/npu_top_sv.sv
 
 # V12 故障注入 (脚本用 RTL= 覆盖在 /tmp 变异副本上运行, 独立 SIM_BUILD 不污染正常回归)
 .PHONY: fault_inject sim_array_fault

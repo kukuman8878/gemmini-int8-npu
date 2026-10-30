@@ -24,11 +24,10 @@ module equiv_wrap #(
 );
 
 wire out_valid_sv, busy_sv, done_sv;
-wire [1:0] state_sv;
 wire [N*N*32-1:0] out_c_flat_sv;
 wire [N*8-1:0] a_vec_flat, b_vec_flat;
-wire cfg_ready_sv, in_ready_sv;
 
+/* verilator lint_off PINCONNECTEMPTY */
 npu_top #(.N(N)) u_dut (
     .clk      (clk),
     .rst_n    (rst_n),
@@ -44,8 +43,10 @@ npu_top #(.N(N)) u_dut (
     .out_ready(out_ready),
     .out_c    (out_c),
     .busy     (busy),
-    .done     (done)
+    .done     (done),
+    .state    (/* unused: 仅调试口, 综合视图侧通过 u_sv.state 观测 */)
 );
+/* verilator lint_on PINCONNECTEMPTY */
 
 genvar g;
 generate
@@ -55,41 +56,54 @@ generate
     end
 endgenerate
 
+/* verilator lint_off PINMISSING */
 npu_top_sv #(.N(N)) u_sv (
     .clk      (clk),
     .rst_n    (rst_n),
     .cfg_valid(cfg_valid),
-    .cfg_ready(cfg_ready_sv),
     .cfg_k    (cfg_k),
     .start    (start),
     .in_valid (in_valid),
-    .in_ready (in_ready_sv),
     .a_vec_flat(a_vec_flat),
     .b_vec_flat(b_vec_flat),
     .out_valid(out_valid_sv),
     .out_ready(out_ready),
     .out_c_flat(out_c_flat_sv),
     .busy     (busy_sv),
-    .done     (done_sv),
-    .state    (state_sv)
+    .done     (done_sv)
 );
+/* verilator lint_on PINMISSING */
 
 // ---- 逐拍等价性检查 ----
+// 注: out_valid/busy/done 来自两实例共享的同一 controller 模块 (防御性冗余);
+//     综合视图真正可分化的一切最终体现在 out_c 上 -> 不一致必须门禁
+// icarus $error 非致命: 用计数器 + final 块 $fatal 保证退出码非零
+integer mismatch_cnt;
+initial mismatch_cnt = 0;
+
 always @(posedge clk or negedge rst_n) begin
     if (rst_n) begin
-        if (out_valid !== out_valid_sv) $error("MISMATCH out_valid");
-        if (busy      !== busy_sv)      $error("MISMATCH busy");
-        if (done      !== done_sv)      $error("MISMATCH done");
+        if (out_valid !== out_valid_sv) begin mismatch_cnt = mismatch_cnt + 1; $error("MISMATCH out_valid"); end
+        if (busy      !== busy_sv)      begin mismatch_cnt = mismatch_cnt + 1; $error("MISMATCH busy"); end
+        if (done      !== done_sv)      begin mismatch_cnt = mismatch_cnt + 1; $error("MISMATCH done"); end
         if (out_valid && (out_c_flat_sv !== {out_c[15], out_c[14], out_c[13], out_c[12],
                                              out_c[11], out_c[10], out_c[9],  out_c[8],
                                              out_c[7],  out_c[6],  out_c[5],  out_c[4],
-                                             out_c[3],  out_c[2],  out_c[1],  out_c[0]}))
+                                             out_c[3],  out_c[2],  out_c[1],  out_c[0]})) begin
+            mismatch_cnt = mismatch_cnt + 1;
             $display("DBG MISMATCH out_c: sv=%h concat=%h", out_c_flat_sv,
                      {out_c[15], out_c[14], out_c[13], out_c[12],
                       out_c[11], out_c[10], out_c[9],  out_c[8],
                       out_c[7],  out_c[6],  out_c[5],  out_c[4],
                       out_c[3],  out_c[2],  out_c[1],  out_c[0]});
+            $error("MISMATCH out_c");
+        end
     end
+end
+
+final begin
+    if (mismatch_cnt != 0)
+        $fatal(1, "equiv_wrap: %0d cycle-level mismatches detected", mismatch_cnt);
 end
 
 endmodule
