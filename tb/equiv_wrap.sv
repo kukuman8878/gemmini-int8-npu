@@ -83,14 +83,14 @@ initial mismatch_cnt = 0;
 
 always @(posedge clk or negedge rst_n) begin
     if (rst_n) begin
-        if (out_valid !== out_valid_sv) begin mismatch_cnt = mismatch_cnt + 1; $error("MISMATCH out_valid"); end
-        if (busy      !== busy_sv)      begin mismatch_cnt = mismatch_cnt + 1; $error("MISMATCH busy"); end
-        if (done      !== done_sv)      begin mismatch_cnt = mismatch_cnt + 1; $error("MISMATCH done"); end
+        if (out_valid !== out_valid_sv) begin mismatch_cnt <= mismatch_cnt + 1; $error("MISMATCH out_valid"); end
+        if (busy      !== busy_sv)      begin mismatch_cnt <= mismatch_cnt + 1; $error("MISMATCH busy"); end
+        if (done      !== done_sv)      begin mismatch_cnt <= mismatch_cnt + 1; $error("MISMATCH done"); end
         if (out_valid && (out_c_flat_sv !== {out_c[15], out_c[14], out_c[13], out_c[12],
                                              out_c[11], out_c[10], out_c[9],  out_c[8],
                                              out_c[7],  out_c[6],  out_c[5],  out_c[4],
                                              out_c[3],  out_c[2],  out_c[1],  out_c[0]})) begin
-            mismatch_cnt = mismatch_cnt + 1;
+            mismatch_cnt <= mismatch_cnt + 1;
             $display("DBG MISMATCH out_c: sv=%h concat=%h", out_c_flat_sv,
                      {out_c[15], out_c[14], out_c[13], out_c[12],
                       out_c[11], out_c[10], out_c[9],  out_c[8],
