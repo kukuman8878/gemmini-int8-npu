@@ -5,8 +5,10 @@ read_lef $::env(TECHLEF)
 read_lef $::env(CELLLEF)
 read_liberty $::env(LIB)
 read_verilog $::env(NETLIST)
-link_design npu_top_sv
+link_design $::env(DESIGN)
 
+# 时钟周期从环境变量读取 (SDC 内 $env(CLK_NS)); 未设置时默认 10.0ns
+if {![info exists ::env(CLK_NS)]} { set ::env(CLK_NS) 10.0 }
 read_sdc $::env(SDC)
 
 report_checks -path_delay max -format full_clock_expanded

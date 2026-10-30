@@ -17,7 +17,7 @@ SYS4_SRCS := $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/systolic_4x4.sv
 SYS8_SRCS := $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/systolic_8x8.sv
 
 LOGDIR := logs
-REGRESSION_TESTS := sim_mac sim_mac_v sim_pe sim_pe16 sim_pe_sva sim_skew sim_controller sim_top sim_top_sva sim_equiv sim_fifo sim_fifo_sva sim_array sim_array8
+REGRESSION_TESTS := sim_mac sim_mac_v sim_pe sim_pe16 sim_pe_sva sim_skew sim_controller sim_top sim_top_sva sim_equiv sim_equiv_opt sim_equiv_cs sim_fifo sim_fifo_sva sim_array sim_array8 sim_bench
 
 export PYTHONPATH := $(abspath $(TB)):$(abspath verification)
 
@@ -108,6 +108,27 @@ sim_equiv:
 	  COCOTB_TEST_MODULES=tb_top \
 	  VERILOG_SOURCES="$(RTL)/controller.sv $(RTL)/input_skew.sv $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/npu_top.sv synthesis/flow/synth_view/input_skew_sv.sv synthesis/flow/synth_view/systolic_array_sv.sv synthesis/flow/synth_view/npu_top_sv.sv $(TB)/equiv_wrap.sv"
 
+# optimized 变体等价性验证 (baseline npu_top vs CSA npu_top_opt, 结果值比对)
+sim_equiv_opt:
+	$(MAKE) sim COCOTB_TOPLEVEL=equiv_opt_wrap SIM_BUILD=sim_build/$@ \
+	  COCOTB_RESULTS_FILE=sim_build/$@/results.xml \
+	  COCOTB_TEST_MODULES=tb_top \
+	  VERILOG_SOURCES="$(RTL)/controller.sv $(RTL)/input_skew.sv $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/npu_top.sv $(RTL)/pe_opt.sv $(RTL)/systolic_array_opt.sv $(RTL)/npu_top_opt.sv $(TB)/equiv_opt_wrap.sv"
+
+# carry-select 变体等价性验证 (baseline npu_top vs npu_top_cs, 逐拍比对)
+sim_equiv_cs:
+	$(MAKE) sim COCOTB_TOPLEVEL=equiv_cs_wrap SIM_BUILD=sim_build/$@ \
+	  COCOTB_RESULTS_FILE=sim_build/$@/results.xml \
+	  COCOTB_TEST_MODULES=tb_top \
+	  VERILOG_SOURCES="$(RTL)/controller.sv $(RTL)/input_skew.sv $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/npu_top.sv $(RTL)/pe_cs.sv $(RTL)/systolic_array_cs.sv $(RTL)/npu_top_cs.sv $(TB)/equiv_cs_wrap.sv"
+
+# 周期测量基准 (W10): 断言 load/drain/output 分量与 controller 语义一致
+sim_bench:
+	$(MAKE) sim COCOTB_TOPLEVEL=npu_top SIM_BUILD=sim_build/$@ \
+	  COCOTB_RESULTS_FILE=sim_build/$@/results.xml \
+	  COCOTB_TEST_MODULES=tb_bench \
+	  VERILOG_SOURCES="$(RTL)/controller.sv $(RTL)/input_skew.sv $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/npu_top.sv"
+
 # 批量随机回归入口 (SEED/PAIRS 由环境传入, 见 verification/random_regression.py)
 sim_top_seeded:
 	SEED=$(SEED) PAIRS=$(PAIRS) $(MAKE) sim COCOTB_TOPLEVEL=npu_top SIM_BUILD=sim_build/$@ \
@@ -136,10 +157,15 @@ regress:
 lint:
 	verilator --lint-only -Wall -Wno-fatal -Wno-MULTITOP -Wno-SYNCASYNCNET \
 	  $(RTL)/*.sv $(TB)/pe_16_64.sv $(TB)/skew_systolic_4x4.sv \
-	  $(TB)/npu_top_assert.sv $(TB)/pe_assert.sv $(TB)/fifo_assert.sv $(TB)/equiv_wrap.sv \
+	  $(TB)/npu_top_assert.sv $(TB)/pe_assert.sv $(TB)/fifo_assert.sv \
+	  $(TB)/equiv_wrap.sv $(TB)/equiv_opt_wrap.sv $(TB)/equiv_cs_wrap.sv \
 	  synthesis/flow/synth_view/input_skew_sv.sv \
 	  synthesis/flow/synth_view/systolic_array_sv.sv \
-	  synthesis/flow/synth_view/npu_top_sv.sv
+	  synthesis/flow/synth_view/systolic_array_opt_sv.sv \
+	  synthesis/flow/synth_view/systolic_array_cs_sv.sv \
+	  synthesis/flow/synth_view/npu_top_sv.sv \
+	  synthesis/flow/synth_view/npu_top_opt_sv.sv \
+	  synthesis/flow/synth_view/npu_top_cs_sv.sv
 
 # V12 故障注入 (脚本用 RTL= 覆盖在 /tmp 变异副本上运行, 独立 SIM_BUILD 不污染正常回归)
 .PHONY: fault_inject sim_array_fault

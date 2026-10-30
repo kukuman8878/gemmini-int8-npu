@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 # synthesis/flow/run_synth.sh : 一键综合 + STA (sky130, yosys -> OpenSTA)
 # 用法: ./run_synth.sh [DESIGN=npu_top_sv] [CLK_NS=10.0]
-# 环境可覆盖: CONDA_BASE (默认 $HOME/miniconda3), PDK_DIR (默认 <CONDA_BASE>/envs/synth/share/pdk/...)
+# 可选环境: RTL_SRCS (空格分隔源文件, 默认 baseline 综合视图)
+# 环境可覆盖: CONDA_BASE, PDK_DIR
 set -euo pipefail
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 DESIGN="${1:-npu_top_sv}"
 CLK_NS="${2:-10.0}"
 CLK_PS="$(awk "BEGIN{print int($CLK_NS*1000)}")"
+
+# 默认 baseline 源文件列表
+RTL_SRCS="${RTL_SRCS:-$REPO/rtl/controller.sv $REPO/rtl/pe.sv $REPO/synthesis/flow/synth_view/input_skew_sv.sv $REPO/synthesis/flow/synth_view/systolic_array_sv.sv $REPO/synthesis/flow/synth_view/npu_top_sv.sv}"
 
 CONDA_BASE="${CONDA_BASE:-$HOME/miniconda3}"
 PDK_DIR="${PDK_DIR:-$CONDA_BASE/envs/synth/share/pdk/sky130A/libs.ref/sky130_fd_sc_hd}"
@@ -21,11 +25,11 @@ conda activate synth
 
 cd "$FLOW"
 echo "=== yosys 综合: $DESIGN @ ${CLK_NS}ns (tt_025C_1v80) ==="
-REPO="$REPO" DESIGN="$DESIGN" LIB="$LIB" CLK_PS="$CLK_PS" yosys -c synth.tcl \
+REPO="$REPO" DESIGN="$DESIGN" LIB="$LIB" CLK_PS="$CLK_PS" RTL_SRCS="$RTL_SRCS" yosys -c synth.tcl \
   | tee "$REPO/synthesis/reports/${DESIGN}_yosys.log"
 
 echo "=== OpenSTA 时序分析 ==="
-LIB="$LIB" TECHLEF="$TECHLEF" CELLLEF="$CELLLEF" SDC="$SDC" \
+LIB="$LIB" TECHLEF="$TECHLEF" CELLLEF="$CELLLEF" SDC="$SDC" DESIGN="$DESIGN" \
   NETLIST="$REPO/synthesis/reports/${DESIGN}_netlist.v" CLK_NS="$CLK_NS" \
   openroad -no_init -exit sta.tcl 2>&1 \
   | tee "$REPO/synthesis/reports/${DESIGN}_sta_full.rpt"

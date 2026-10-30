@@ -5,15 +5,11 @@ yosys -import
 set design  $env(DESIGN)
 set lib     $env(LIB)
 set clk_ps  $env(CLK_PS)
+set srcs    $env(RTL_SRCS)
 
 read_liberty -lib $lib
 
-read_verilog -sv \
-  $env(REPO)/rtl/controller.sv \
-  $env(REPO)/rtl/pe.sv \
-  $env(REPO)/synthesis/flow/synth_view/input_skew_sv.sv \
-  $env(REPO)/synthesis/flow/synth_view/systolic_array_sv.sv \
-  $env(REPO)/synthesis/flow/synth_view/npu_top_sv.sv
+read_verilog -sv {*}$srcs
 
 hierarchy -top $design
 
@@ -26,7 +22,7 @@ opt
 techmap
 opt
 dfflibmap -liberty $lib
-abc -liberty $lib
+abc -liberty $lib -D 4000
 
 # 扁平化后统计顶层总面积 (层次化 stat 无法累加 16x PE 实例)
 flatten

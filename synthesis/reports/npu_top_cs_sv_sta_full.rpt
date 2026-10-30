@@ -1,0 +1,63 @@
+OpenROAD 2.0-12381-g01bba3695 
+This program is licensed under the BSD-3 license. See the LICENSE file for details.
+Components of this program may be licensed under more restrictive licenses which must be honored.
+[INFO ODB-0222] Reading LEF file: /home/kukuman/miniconda3/envs/synth/share/pdk/sky130A/libs.ref/sky130_fd_sc_hd/techlef/sky130_fd_sc_hd__nom.tlef
+[INFO ODB-0223]     Created 14 technology layers
+[INFO ODB-0224]     Created 25 technology vias
+[INFO ODB-0226] Finished LEF file:  /home/kukuman/miniconda3/envs/synth/share/pdk/sky130A/libs.ref/sky130_fd_sc_hd/techlef/sky130_fd_sc_hd__nom.tlef
+[INFO ODB-0222] Reading LEF file: /home/kukuman/miniconda3/envs/synth/share/pdk/sky130A/libs.ref/sky130_fd_sc_hd/lef/sky130_fd_sc_hd.lef
+[WARNING ODB-0220] WARNING (LEFPARS-2008): NOWIREEXTENSIONATPIN statement is obsolete in version 5.6 or later.
+The NOWIREEXTENSIONATPIN statement will be ignored. See file /home/kukuman/miniconda3/envs/synth/share/pdk/sky130A/libs.ref/sky130_fd_sc_hd/lef/sky130_fd_sc_hd.lef at line 2.
+
+[INFO ODB-0225]     Created 437 library cells
+[INFO ODB-0226] Finished LEF file:  /home/kukuman/miniconda3/envs/synth/share/pdk/sky130A/libs.ref/sky130_fd_sc_hd/lef/sky130_fd_sc_hd.lef
+Startpoint: _08829_ (rising edge-triggered flip-flop clocked by clk)
+Endpoint: _09491_ (rising edge-triggered flip-flop clocked by clk)
+Path Group: clk
+Path Type: max
+
+  Delay    Time   Description
+---------------------------------------------------------
+   0.00    0.00   clock clk (rise edge)
+   0.00    0.00   clock network delay (ideal)
+   0.00    0.00 ^ _08829_/CLK (sky130_fd_sc_hd__dfrtp_1)
+   0.56    0.56 ^ _08829_/Q (sky130_fd_sc_hd__dfrtp_1)
+   0.23    0.79 v _08978_/Y (sky130_fd_sc_hd__nand4_1)
+   0.25    1.04 v _08980_/X (sky130_fd_sc_hd__and3_1)
+   0.19    1.23 ^ _08983_/Y (sky130_fd_sc_hd__nor3_1)
+   0.15    1.38 ^ _08985_/Y (sky130_fd_sc_hd__nand3b_1)
+   0.40    1.78 v _09016_/X (sky130_fd_sc_hd__xnor3_1)
+   0.24    2.02 ^ _09017_/Y (sky130_fd_sc_hd__xnor2_1)
+   0.17    2.19 ^ _09020_/Y (sky130_fd_sc_hd__xnor2_1)
+   0.11    2.30 v _09021_/Y (sky130_fd_sc_hd__xnor2_1)
+   0.38    2.68 v _09026_/X (sky130_fd_sc_hd__maj3_1)
+   0.36    3.04 v _09060_/X (sky130_fd_sc_hd__maj3_1)
+   0.36    3.40 v _09098_/X (sky130_fd_sc_hd__maj3_1)
+   0.36    3.77 v _09134_/X (sky130_fd_sc_hd__maj3_1)
+   0.36    4.13 v _09174_/X (sky130_fd_sc_hd__maj3_1)
+   0.37    4.50 v _09211_/X (sky130_fd_sc_hd__maj3_1)
+   0.36    4.86 v _09244_/X (sky130_fd_sc_hd__maj3_1)
+   0.36    5.22 v _09275_/X (sky130_fd_sc_hd__maj3_1)
+   0.36    5.59 v _09301_/X (sky130_fd_sc_hd__maj3_1)
+   0.38    5.97 v _09326_/X (sky130_fd_sc_hd__maj3_1)
+   0.25    6.21 ^ _09340_/Y (sky130_fd_sc_hd__a21oi_1)
+   0.22    6.43 ^ _09396_/X (sky130_fd_sc_hd__or4b_1)
+   0.09    6.52 v _09410_/Y (sky130_fd_sc_hd__o21ai_0)
+   0.25    6.77 v _09412_/X (sky130_fd_sc_hd__a32o_1)
+   0.00    6.77 v _09491_/D (sky130_fd_sc_hd__dfrtp_1)
+           6.77   data arrival time
+
+  10.00   10.00   clock clk (rise edge)
+   0.00   10.00   clock network delay (ideal)
+   0.00   10.00   clock reconvergence pessimism
+          10.00 ^ _09491_/CLK (sky130_fd_sc_hd__dfrtp_1)
+  -0.12    9.88   library setup time
+           9.88   data required time
+---------------------------------------------------------
+           9.88   data required time
+          -6.77   data arrival time
+---------------------------------------------------------
+           3.10   slack (MET)
+
+
+worst slack 3.10

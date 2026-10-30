@@ -1,0 +1,72 @@
+
+19. Printing statistics.
+
+=== npu_top_opt_sv ===
+
+   Number of wires:              11394
+   Number of wire bits:          17948
+   Number of public wires:         477
+   Number of public wire bits:    7031
+   Number of memories:               0
+   Number of memory bits:            0
+   Number of processes:              0
+   Number of cells:              13365
+     $scopeinfo                     19
+     sky130_fd_sc_hd__a211o_1        2
+     sky130_fd_sc_hd__a211oi_1      16
+     sky130_fd_sc_hd__a21boi_0      48
+     sky130_fd_sc_hd__a21o_1        64
+     sky130_fd_sc_hd__a21oi_1      310
+     sky130_fd_sc_hd__a221o_1       16
+     sky130_fd_sc_hd__a221oi_1      16
+     sky130_fd_sc_hd__a22o_1       464
+     sky130_fd_sc_hd__a22oi_1       81
+     sky130_fd_sc_hd__a311oi_1      80
+     sky130_fd_sc_hd__a31o_1        16
+     sky130_fd_sc_hd__a31oi_1       52
+     sky130_fd_sc_hd__a32o_1       256
+     sky130_fd_sc_hd__and2_0       449
+     sky130_fd_sc_hd__and3_1        34
+     sky130_fd_sc_hd__and3b_1       16
+     sky130_fd_sc_hd__and4_1         1
+     sky130_fd_sc_hd__clkinv_1     294
+     sky130_fd_sc_hd__dfrtp_1     1927
+     sky130_fd_sc_hd__lpflow_inputiso1p_1    448
+     sky130_fd_sc_hd__lpflow_isobufsrc_1    146
+     sky130_fd_sc_hd__maj3_1       800
+     sky130_fd_sc_hd__mux2_1         8
+     sky130_fd_sc_hd__nand2_1     2399
+     sky130_fd_sc_hd__nand2b_1      82
+     sky130_fd_sc_hd__nand3_1       48
+     sky130_fd_sc_hd__nand3b_1      18
+     sky130_fd_sc_hd__nand4_1       17
+     sky130_fd_sc_hd__nor2_1       977
+     sky130_fd_sc_hd__nor2b_1       64
+     sky130_fd_sc_hd__nor3_1       116
+     sky130_fd_sc_hd__nor4_1         3
+     sky130_fd_sc_hd__nor4b_1        1
+     sky130_fd_sc_hd__o2111ai_1      1
+     sky130_fd_sc_hd__o211a_1       16
+     sky130_fd_sc_hd__o21a_1        65
+     sky130_fd_sc_hd__o21ai_0      632
+     sky130_fd_sc_hd__o21ba_1       16
+     sky130_fd_sc_hd__o21bai_1      48
+     sky130_fd_sc_hd__o221ai_1       1
+     sky130_fd_sc_hd__o22ai_1       50
+     sky130_fd_sc_hd__o311a_1       16
+     sky130_fd_sc_hd__o311ai_0      80
+     sky130_fd_sc_hd__o31a_1         1
+     sky130_fd_sc_hd__o31ai_1      130
+     sky130_fd_sc_hd__o32ai_1       16
+     sky130_fd_sc_hd__or3_1         96
+     sky130_fd_sc_hd__or4_1          1
+     sky130_fd_sc_hd__xnor2_1     2006
+     sky130_fd_sc_hd__xnor3_1      115
+     sky130_fd_sc_hd__xor2_1       691
+     sky130_fd_sc_hd__xor3_1        96
+
+   Area for cell type $scopeinfo is unknown!
+
+   Chip area for module '\npu_top_opt_sv': 125964.560000
+     of which used for sequential elements: 48221.248000 (38.28%)
+

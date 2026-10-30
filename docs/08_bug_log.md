@@ -30,6 +30,8 @@
 | B11 | sim_pe VERILOG_SOURCES 为空 | 首次 make sim_pe 编译失败 | Makefile 漏定义 PE_SRCS | `ee204ed` | pe 8/8 |
 | B12 | icarus 报 "Can not assign non-array to array" | 首次 make sim_skew 编译失败 | wrapper 中 `wire [0:3] en_a` 是压缩数组而非非压缩端口 | `68abd1a` | skew 6/6 |
 | B13 | en 门控单通道破坏无法分辨 | 复审突变 &&→en_a 未被任何测试区分 | en_a/en_b 恒同值驱动 | `54ac24a`（test_en_asym 双相位独立驱动） | 两方向突变各被唯一相位捕获 |
+| B14 | pe_opt 乘法结果高位符号扩展错（$signed(a*b) 被截断 8bit） | make sim_equiv_opt 全量 16 mismatch | Icarus 对 `$signed(a_in*b_in)` 将 8×8 乘法结果算成 8bit，符号扩展前即截断（1680→0x90→0xffffff90） | 显式 `prod=a_in*b_in`(16bit) 再符号扩展 `{{16{prod[15]}},prod}` | equiv_opt/equiv_cs 8/8 |
+| B15 | CSA 输出寄存器采样比 acc 稳定早 1 拍，结果缺最后累加 | sim_equiv_opt 全量 mismatch（高位符号扩展错） | out_c_reg 无条件采样 c_comb，DRAIN 末拍沿前 sum/carry 未完成最后累加；且 state==DRAIN 使能 mux 还引入 14ns 假关键路径 | out_c/out_valid/done 同步打拍 1 级（输出握手重定时），OUTPUT 阶段 2 拍 | equiv_opt 8/8 |
 
 ## 突变验证总览（V12 证据链）
 
