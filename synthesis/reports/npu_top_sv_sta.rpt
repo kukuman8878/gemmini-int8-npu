@@ -1,0 +1,13 @@
+
+20. Executing STA pass (static timing analysis).
+
+Syntax error in command `sta -liberty /home/kukuman/miniconda3/envs/synth/share/pdk/sky130A/libs.ref/sky130_fd_sc_hd/lib/sky130_fd_sc_hd__tt_025C_1v80.lib -clk clk -period 10000':
+
+    sta [options] [selection]
+
+This command performs static timing analysis on the design. (Only considers
+paths within a single module, so the design must be flattened.)
+
+ERROR: Command syntax error: Unknown option or option in arguments.
+> sta -liberty /home/kukuman/miniconda3/envs/synth/share/pdk/sky130A/libs.ref/sky130_fd_sc_hd/lib/sky130_fd_sc_hd__tt_025C_1v80.lib -clk clk -period 10000
+>     ^

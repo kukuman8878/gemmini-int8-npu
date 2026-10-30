@@ -15,9 +15,7 @@ logs/
 *.o
 *.d
 
-# 综合产物
-synthesis/reports/*
-!synthesis/reports/.gitkeep
+# 综合产物 (reports 为固定版本结果, 提交保留)
 synthesis/flow/*/results/
 *.vg
 *.net

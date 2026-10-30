@@ -17,7 +17,7 @@ SYS4_SRCS := $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/systolic_4x4.sv
 SYS8_SRCS := $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/systolic_8x8.sv
 
 LOGDIR := logs
-REGRESSION_TESTS := sim_mac sim_mac_v sim_pe sim_pe16 sim_pe_sva sim_skew sim_controller sim_top sim_top_sva sim_fifo sim_fifo_sva sim_array sim_array8
+REGRESSION_TESTS := sim_mac sim_mac_v sim_pe sim_pe16 sim_pe_sva sim_skew sim_controller sim_top sim_top_sva sim_equiv sim_fifo sim_fifo_sva sim_array sim_array8
 
 export PYTHONPATH := $(abspath $(TB)):$(abspath verification)
 
@@ -101,6 +101,13 @@ sim_fifo_sva:
 	  COCOTB_TEST_MODULES=tb_fifo EXTRA_ARGS="--assert" \
 	  VERILOG_SOURCES="$(RTL)/fifo.sv $(TB)/fifo_assert.sv"
 
+# 综合视图等价性验证 (原 RTL vs 打包端口综合视图, 逐拍比对)
+sim_equiv:
+	$(MAKE) sim COCOTB_TOPLEVEL=equiv_wrap SIM_BUILD=sim_build/$@ \
+	  COCOTB_RESULTS_FILE=sim_build/$@/results.xml \
+	  COCOTB_TEST_MODULES=tb_top \
+	  VERILOG_SOURCES="$(RTL)/controller.sv $(RTL)/input_skew.sv $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/npu_top.sv synthesis/flow/synth_view/input_skew_sv.sv synthesis/flow/synth_view/systolic_array_sv.sv synthesis/flow/synth_view/npu_top_sv.sv $(TB)/equiv_wrap.sv"
+
 # 批量随机回归入口 (SEED/PAIRS 由环境传入, 见 verification/random_regression.py)
 sim_top_seeded:
 	SEED=$(SEED) PAIRS=$(PAIRS) $(MAKE) sim COCOTB_TOPLEVEL=npu_top SIM_BUILD=sim_build/$@ \
@@ -144,9 +151,7 @@ sim_array_fault:
 
 .PHONY: synth
 synth:
-	@command -v yosys >/dev/null 2>&1 || { \
-	  echo "yosys not installed (W9 任务, 见 docs/05_ppa_sta_report.md)"; exit 1; }
-	@echo "TODO: yosys flow 脚本 (synthesis/flow/)"
+	bash synthesis/flow/run_synth.sh $(DESIGN) $(CLK_NS)
 
 .PHONY: mrproper
 mrproper:

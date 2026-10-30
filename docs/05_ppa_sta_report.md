@@ -1,36 +1,44 @@
-# 05 PPA / STA 报告（模板）
+# 05 PPA / STA 报告（W9 基线）
 
-版本：v0.1 | 日期：2026-10-29 | 状态：**未开始（W9）——以下全部为待测字段，禁止预填**
+版本：v1.0 | 日期：2026-10-30 | 状态：**Baseline 已实测**（优化/扩展行待 W10/W13）
 
-## 1. 工具链与条件
+## 1. 工具链与条件（已固定）
 
 | 项目 | 值 |
 |:---|:---|
-| 综合工具 | Yosys（待安装，版本待记录） |
-| STA 工具 | OpenSTA（待安装，版本待记录） |
-| 工艺/Liberty | 待定（记录文件名、工艺节点、PVT 角） |
-| 时钟约束 | `synthesis/constraints.sdc`（待写） |
+| 综合工具 | Yosys 0.38+92（conda env `synth`，litex-hub） |
+| STA 工具 | OpenSTA via OpenROAD 2.0-12381（同 env） |
+| 工艺/Liberty | sky130_fd_sc_hd，`sky130_fd_sc_hd__tt_025C_1v80.lib`（tt 角，25°C，1.8V） |
+| 时钟约束 | `synthesis/constraints.sdc`：clk 10ns（100MHz 目标），IO 延迟 2ns |
+| 综合入口 | `synthesis/flow/synth_view/npu_top_sv.sv`（打包端口综合视图，与原 RTL 逐拍等价——`make sim_equiv` 验证） |
+| 复现命令 | `synthesis/flow/run_synth.sh`（一键 yosys + OpenSTA） |
 
-## 2. 结果模板
+**口径说明**：
+- yosys 不支持非压缩数组端口 → 综合视图（打包端口）与原 RTL 由 `tb/equiv_wrap.sv` 逐拍等价性验证（tb_top 全量用例，0 mismatch）。
+- yosys 内置 `sta` 为玩具版（无法识别映射后单元）→ 时序由 OpenSTA 读取 yosys 映射后网表完成；时钟网络理想（无 CTS/布局）。
+- 异步复位 `rst_n` 的 recovery check 由 OpenSTA 一并覆盖。
+- 报告为**综合后（pre-layout）**时序，非布局后。
+
+## 2. Baseline 实测结果（4×4 OS，npu_top）
+
+| 指标 | 值 | 来源 |
+|:---|:---|:---|
+| 面积 (cell area) | **83774.10 µm²** | `synthesis/reports/npu_top_sv_stat.rpt` |
+| 单元数 | 9651 cells | 同上 |
+| 关键路径 (WNS) | **worst slack 2.68 ns** @ 10ns 周期 | `synthesis/reports/npu_top_sv_sta_full.rpt` |
+| 目标/可达频率 | 100MHz 目标收敛；slack 2.68ns → 理论可进一步降周期（未实测上限） | 同上 |
+| 关键路径组成 | PE 累加器 32 位进位链（maj3/xor3/o21ai 全加器链，~7.3ns 数据路径） | 同上 |
+
+## 3. 结果表
 
 | 方案 | 阵列 | 面积 | WNS | 目标/可达频率 | 完成周期 | 总延迟 | 说明 |
 |:---|:---|:---|:---|:---|:---|:---|:---|
-| Baseline | 4×4 OS | 待测 | 待测 | 待测 | 待测 | 待测 | 基础实现 |
-| Optimized | 4×4 OS | 待测 | 待测 | 待测 | 待测 | 待测 | 记录具体改动 |
-| Scale-up | 8×8 OS | 待测 | 待测 | 待测 | 待测 | 待测 | P1 扩展 |
-
-## 3. 指标口径
-
-- 面积：映射标准单元后的 cell area，仅在同库/同约束下比较。
-- 关键路径：STA 最大数据路径延迟/setup slack，注明前端综合还是布局后。
-- 矩阵周期：从输入任务被接受至输出完成握手的时钟数，同时报告加载、计算、排空分量。
-- 端到端执行时间 = cycles × clock_period（明确用哪个可实现的周期）。
-- 理论峰值 = ARRAY_DIM² MAC/cycle（仅上界）。
-- 利用率 = 有效 MAC 数 ÷ (PE 数 × 计量周期数)，注明加载/排空是否计入分母。
-- 功耗：无可靠活动率/功耗库时一律标注“未评估”。
+| Baseline | 4×4 OS | 83774.10 µm² | 2.68 ns @10ns | 100MHz 收敛 | K+2N-1+握手 | 待测 | sky130 hd, tt 角 |
+| Optimized | 4×4 OS | 待测 | 待测 | 待测 | 待测 | 待测 | W10 计划 |
+| Scale-up | 8×8 OS | 待测 | 待测 | 待测 | 待测 | 待测 | W13 计划 |
 
 ## 4. 实验规则
 
-- 比较必须使用同一工艺库、同一约束、同一工具版本、同一优化级别。
-- 保留 baseline 与 optimized 的 git commit，提供一键脚本。
+- 比较必须使用同一工艺库、同一约束、同一工具版本、同一优化级别（本页 §1 条件固定）。
+- 保留 baseline 与 optimized 的 git commit，一键脚本 `synthesis/flow/run_synth.sh`。
 - 优化结论同时考虑频率、周期、面积；不预设“提升 X%”。
