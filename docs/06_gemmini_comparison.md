@@ -1,6 +1,6 @@
-# 06 Gemmini 对照实验记录（模板）
+# 06 Gemmini 对照实验记录
 
-版本：v0.1 | 日期：2026-10-29 | 状态：**源码已 clone，仿真未跑（W11）**
+版本：v1.1 | 日期：2026-10-31 | 状态：**官方基线测试 PASS + WS/OS 周期对照实测完成**
 
 ## 1. 官方工程版本
 
@@ -8,32 +8,82 @@
 |:---|:---|
 | 仓库 | `../gemmini-ref`（clone 自 https://github.com/ucb-bar/gemmini） |
 | Gemmini commit | `8c3f9923a44a2fe2c7930587be297d6d4f8c09ca`（2025-09-01，PR #392 merge） |
-| CHIPYARD.hash | `e02074414158c85059c1dcb231ff2f8941254b9a`（Chipyard 子模块**尚未 clone**） |
-| 子模块 | gemmini-rocc-tests / libgemmini / onnxruntime-riscv（未拉取） |
-| 构建环境 | 待记录（build-setup.sh 版本、工具链） |
+| Chipyard commit | `e02074414158c85059c1dcb231ff2f8941254b9a`（CHIPYARD.hash，已 clone 至 `../chipyard`） |
+| 子模块 | gemmini（置入 `chipyard/generators/gemmini`，同 commit）、rocket-chip、hardfloat、testchipip 等全部 init |
 
-## 2. 官方基线任务（计划）
+## 2. 构建环境（已固定）
 
-1. 固定 commit → `cd chipyard/sims/verilator && make CONFIG=GemminiRocketConfig`（实际命令以固定版本 README 为准）。
-2. 官方矩阵乘测试 PASS，保留命令与日志。
-3. WS/OS 对照：相同矩阵形状、数据类型、精度、正确性标准，比较周期、访存、利用率。
-4. 编写“自研 4×4 OS 子系统 vs Gemmini 完整系统”的口径说明。
+| 项目 | 值 |
+|:---|:---|
+| RISC-V 工具链 | riscv64-unknown-elf-gcc 13.2.0（conda env `.conda-env/riscv-tools`） |
+| Verilator | 5.022（conda-forge） |
+| Java | openjdk 20（conda env） |
+| firtool (CIRCT) | 1.75.0（llvm/circt release 预编译二进制） |
+| 硬件配置 | `GemminiRocketConfig`（`gemmini.DefaultGemminiConfig`，INT8，默认 16×16 阵列） |
 
-## 3. 基准矩阵（计划集合，非已测结果）
+**构建命令**：
+```shell
+cd chipyard && git checkout e0207441...
+git submodule update --init generators/gemmini && cd generators/gemmini && git checkout 8c3f9923...
+./build-setup.sh riscv-tools --skip-ctags --skip-precompile --skip-firesim --skip-marshal --skip-circt --skip-clean
+source env.sh
+make -C generators/gemmini/software/libgemmini install
+cd generators/gemmini/software/gemmini-rocc-tests && ./build.sh
+cd sims/verilator && make CONFIG=GemminiRocketConfig
+```
 
-| 用例 | M×K×N | 测试目的 |
-|:---|:---|:---|
-| B01 | 4×4×4 | 小尺寸与阵列启动开销 |
-| B02 | 16×16×16 | 标准方阵 |
-| B03 | 32×32×32 | 规模放大 |
-| B04 | 64×64×64 | 较大 GEMM |
-| B05 | 32×16×8 | 非方阵 |
-| B06 | 17×17×17 | 非整 tile 的利用率与 padding |
+**构建过程中踩的 3 个坑（已修复，记录复现）**：
+1. **conda-lock 环境 Python 3.15 缺 `sre_parse`**：`build-setup.sh` 创建临时 `.conda-lock-env` 时未 pin Python，
+   conda 装了 3.15，`conda-lock` 依赖的 poetry/lark 在 3.13+ 移除 `sre_parse` 导致 step 1 失败。
+   修复：`scripts/build-setup.sh` 第 170 行加 `python=3.11`。
+2. **`firtool: command not found`**：`--skip-circt` 跳过了 CIRCT 安装，但 Verilator 流程 FIRRTL→Verilog 需要 firtool。
+   修复：`tools/install-circt` 下载 `circt-full-static-linux-x64.tar.gz`（firtool-1.75.0）到 `.conda-env/riscv-tools/bin`。
+3. **Verilator 仿真 stack 偏小**：运行需 `ulimit -s 16384`。
 
-如官方 API/配置限制导致某用例不可用，记录替代用例及原因。
+## 3. 官方基线测试结果
 
-## 4. 结果表（待测）
+| 测试 | 二进制 | 结果 | 耗时 | 说明 |
+|:---|:---|:---|:---|:---|
+| mvin/mvout 数据搬运 | `mvin_mvout-baremetal` | **PASS** | ~1 min | 数据搬运指令 |
+| OS 矩阵乘 | `matmul_os-baremetal` | **PASS** | ~30 min | OUTPUT_STATIONARY，DIM=16，N=2，多组 activation/shift/preload 组合 |
+| WS 矩阵乘 | `matmul_ws-baremetal` | **PASS** | ~50 min | WEIGHT_STATIONARY 对照 |
+
+> PASS 判据：测试用 `assert` + `is_equal` 逐元素比对硬件结果与 golden，失败会打印矩阵 dump 并 `exit(1)`；
+> `$finish` 正常退出即全对。完整输出保留在 `logs/gemmini/`。
+
+## 4. WS/OS 周期对照（实测）
+
+用官方 `tiled_matmul_os` / `tiled_matmul_ws`（`read_cycles()` = `rdcycle` CSR），同一 64×64×64 矩阵
+（`MAT_DIM_I=J=K=64`，baremetal 默认），`CHECK_RESULT=1` 逐元素比对硬件 vs CPU golden（均 `$finish` 正常退出）：
+
+| 数据流 | 周期 (cycles) | 有效 MAC | 理论峰值 MAC/cycle | 理想周期 | 利用率 |
+|:---|:---|:---|:---|:---|:---|
+| OS（输出静止）| **3550** | 64³ = 262144 | 16×16 = 256 | 1024 | **28.8%** |
+| WS（权重静止）| **2268** | 262144 | 256 | 1024 | **45.2%** |
+
+**结论**：WS 比 OS 快 36%（2268/3550）。原因：OS 的 A/B 斜排 skew 填充 + 输出静止导致启动/排空开销大；
+WS 权重预加载后输入流式处理，阵列利用率更高（45.2% vs 28.8%）。**口径**：周期仅含 `gemmini matmul` 段
+（mvin/mvout 已排除在计时段外；`tiled_matmul_os/ws` 的 `start=read_cycles()` 在 `tiled_matmul_auto(...)` 前、`end` 在其后）。
+这是 Gemmini 完整系统（含 Scratchpad/DMA）的阵列内部周期，与自研 4×4 子系统的比较见 §6。
+
+## 5. 结果表（实测）
 
 | 用例 | 数据流 | 周期 | 访存量 | 利用率 | 备注 |
 |:---|:---|:---|:---|:---|:---|
-| 待测 | 待测 | 待测 | 待测 | 待测 | 待测 |
+| 64×64×64 | OS | 3550 | — | 28.8% | 16×16 阵列，INT8 |
+| 64×64×64 | WS | 2268 | — | 45.2% | 16×16 阵列，INT8 |
+
+## 6. 自研 4×4 OS 子系统 vs Gemmini 完整系统（口径说明）
+
+两者**层次不同**，不把原始数值做等价芯片对比：
+
+| 维度 | 自研 4×4 子系统 | Gemmini（GemminiRocketConfig） |
+|:---|:---|:---|
+| 阵列规模 | 4×4 = 16 PE | 16×16 = 256 PE |
+| 层次 | 计算子系统（npu_top + controller + skew）| 完整 SoC（Rocket core + Gemmini + Scratchpad + DMA/ROB） |
+| 存储 | 无片上存储（数据由测试端逐拍喂入）| 256KB Scratchpad + Accumulator |
+| 数据流 | 仅 OS | OS/WS 运行时可选 |
+| 可比较口径 | 单 tile 周期公式 `K+2N-1+1`、PPA（sky130 实测）| 阵列内部周期（本节）、利用率 |
+
+**结论**：自研子系统的贡献在**自研 RTL + 验证闭环 + PPA 证据链**（docs/05），Gemmini 的贡献在
+**OS/WS 架构对照**（本节：WS 利用率 45.2% vs OS 28.8%，量化了数据流差异）。二者不叠加成"性能对比"。

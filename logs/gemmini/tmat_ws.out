@@ -1,0 +1,9 @@
+MAT_DIM_I: 64
+MAT_DIM_J: 64
+MAT_DIM_K: 64
+Starting gemmini matmul
+Cycles taken: 2268
+Starting slow CPU matmul
+Cycles taken: 2967218
+[UART] UART0 is here (stdin/stdout).
+- /home/kukuman/NPU/chipyard/sims/verilator/generated-src/chipyard.harness.TestHarness.GemminiRocketConfig/gen-collateral/TestDriver.v:158: Verilog $finish
