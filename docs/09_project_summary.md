@@ -7,7 +7,7 @@
 独立用 SystemVerilog 实现了一个可综合、可验证、可分析的 signed INT8 脉动阵列计算子系统
 （4×4 OS，K=1…256，INT32 累加），配套完整验证闭环（Golden/Scoreboard/SVA/覆盖矩阵/故障注入/
 agent 突变审核）、真实综合/STA 报告（sky130，baseline + 2 变体 PPA 对比），并跑通官方 Gemmini
-基线、完成 WS/OS 周期对照。32 个 commit，15 条缺陷闭环，17 个回归目标全绿。
+基线、完成 WS/OS 周期对照。33 个 commit，15 条缺陷闭环，17 个回归目标全绿。
 
 ## 2. 三种岗位版本的项目讲述
 
@@ -61,7 +61,7 @@ WS/OS 对照：64×64×64 端到端 OS 3550 cycles（28.8%）、WS 2268 cycles�
 **架构**：
 - 跑通官方 Gemmini/Chipyard 基线（RISC-V 工具链 + Verilator），完成 WS/OS 周期对照（64×64×64：WS 2268 vs OS 3550 cycles，WS 快 56%），并写清与自研子系统的层次口径。
 
-**通用能力**：SystemVerilog / Python / cocotb / Verilator / Yosys / OpenSTA / Makefile / git（32 commit 迭代）。
+**通用能力**：SystemVerilog / Python / cocotb / Verilator / Yosys / OpenSTA / Makefile / git（33 commit 迭代）。
 
 ## 4. 口径红线（面试/简历一致遵守）
 

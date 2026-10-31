@@ -9,7 +9,7 @@
 
 参考 Gemmini 的 PE 与 OS/WS 数据流，**独立用 SystemVerilog 从零实现**可综合、可验证、可分析的 signed INT8
 脉动阵列计算子系统（A/B INT8、乘积 INT16、累加 INT32、K=1…256），并以官方 Gemmini/Chipyard 环境做
-WS/OS 架构对照实验。全历史 32 个 commit 可查。
+WS/OS 架构对照实验。全历史 33 个 commit 可查。
 
 ## 当前状态（2026-10-31，主线 W1–W11 全部完成）
 
@@ -93,7 +93,7 @@ OS 3550 cycles（28.8%）、WS 2268 cycles（45.1%）——WS 快 56%。自研 4
 
 ## 复现说明
 
-1. `git log` 查看 32 个 commit 的设计迭代记录；每个 RTL 文件头注释写明来源与验证状态。
+1. `git log` 查看 33 个 commit 的设计迭代记录；每个 RTL 文件头注释写明来源与验证状态。
 2. 综合/STA：`source .../synth conda env` 后 `make synth`（或 `synthesis/flow/run_synth*.sh`），PDK 路径可 `CONDA_BASE/PDK_DIR` 覆盖。
 3. Gemmini 基线：环境在 `../chipyard`（commit `e0207441`），构建命令与踩坑见 `docs/06 §2`。
 4. 所有性能数字以 `synthesis/reports/` 与 `logs/` 为准，不预填、不估算。
