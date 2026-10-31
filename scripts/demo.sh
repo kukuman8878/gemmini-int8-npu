@@ -13,7 +13,7 @@ echo "A/B INT8、乘积 INT16、累加 INT32、K=1..256；acc_clr 放 IDLE 态�
 
 echo
 echo "=============================================================="
-echo "第 1-2 分钟：跑一个端到端矩阵乘（Golden 与 DUT 精确一致）"
+echo "第 1-2 分钟：跑端到端矩阵乘测试（Golden 与 DUT 精确一致，8 用例）"
 echo "=============================================================="
 make sim_top 2>&1 | grep -E "TESTS=|PASS|FAIL|passed|mismatch" | tail -5 || echo "(sim_top 结果见 logs/)"
 
