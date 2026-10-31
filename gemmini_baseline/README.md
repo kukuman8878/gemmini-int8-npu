@@ -32,11 +32,12 @@
 | `matmul_os-baremetal`（OS 矩阵乘）| PASS | ~30 min |
 | `matmul_ws-baremetal`（WS 矩阵乘）| PASS | ~50 min |
 
-WS/OS 周期对照（`tiled_matmul_os`/`tiled_matmul_ws`，64×64×64，`read_cycles()`）：
+WS/OS 周期对照（`tiled_matmul_os`/`tiled_matmul_ws`，64×64×64，`read_cycles()`，端到端含搬运）：
 
-| 数据流 | 周期 | 利用率 |
+| 数据流 | 周期 | 端到端效率 |
 |:---|:---|:---|
 | OS（输出静止）| 3550 | 28.8% |
-| WS（权重静止）| 2268 | 45.2% |
+| WS（权重静止）| 2268 | 45.1% |
 
-WS 比 OS 快 36%。完整输出保留在 `logs/gemmini/`，口径说明见 `docs/06_gemmini_comparison.md §4/§6`。
+WS 周期为 OS 的 63.9%（少 36%），即快 56%（加速比 1.565×）。完整输出保留在 `logs/gemmini/`，
+口径说明见 `docs/06_gemmini_comparison.md §4/§6`。

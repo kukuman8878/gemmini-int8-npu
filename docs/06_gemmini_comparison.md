@@ -56,22 +56,29 @@ cd sims/verilator && make CONFIG=GemminiRocketConfig
 用官方 `tiled_matmul_os` / `tiled_matmul_ws`（`read_cycles()` = `rdcycle` CSR），同一 64×64×64 矩阵
 （`MAT_DIM_I=J=K=64`，baremetal 默认），`CHECK_RESULT=1` 逐元素比对硬件 vs CPU golden（均 `$finish` 正常退出）：
 
-| 数据流 | 周期 (cycles) | 有效 MAC | 理论峰值 MAC/cycle | 理想周期 | 利用率 |
+| 数据流 | 周期 (cycles) | 有效 MAC | 理论峰值 MAC/cycle | 理想周期 | 端到端效率 |
 |:---|:---|:---|:---|:---|:---|
 | OS（输出静止）| **3550** | 64³ = 262144 | 16×16 = 256 | 1024 | **28.8%** |
-| WS（权重静止）| **2268** | 262144 | 256 | 1024 | **45.2%** |
+| WS（权重静止）| **2268** | 262144 | 256 | 1024 | **45.1%** |
 
-**结论**：WS 比 OS 快 36%（2268/3550）。原因：OS 的 A/B 斜排 skew 填充 + 输出静止导致启动/排空开销大；
-WS 权重预加载后输入流式处理，阵列利用率更高（45.2% vs 28.8%）。**口径**：周期仅含 `gemmini matmul` 段
-（mvin/mvout 已排除在计时段外；`tiled_matmul_os/ws` 的 `start=read_cycles()` 在 `tiled_matmul_auto(...)` 前、`end` 在其后）。
-这是 Gemmini 完整系统（含 Scratchpad/DMA）的阵列内部周期，与自研 4×4 子系统的比较见 §6。
+**口径（重要）**：`tiled_matmul_os/ws` 的 `start=read_cycles()` 在 `tiled_matmul_auto(...)` 之前、`end` 在其后，
+而 `tiled_matmul_auto` 内部包含 `gemmini_config` + `mvin` A/B/D + `compute` + `mvout` C + `fence` 全流程。
+故周期 = **端到端矩阵乘全程**（含数据搬运、配置、fence），**不是**纯阵列计算周期。表中"端到端效率"
+= 有效 MAC ÷ (PE数 × 端到端周期)，反映含搬运与配置开销的整体效率，**低于**纯阵列利用率（后者需用
+Gemmini performance counter 单独测 compute active cycle，本批未做）。
+
+**结论**：WS 周期为 OS 的 63.9%（2268/3550，少 36%），即 **WS 比 OS 快 56%**（加速比 1.565×）。
+原因（不单一归因）：(a) WS 权重预加载后输入流式处理，避免 OS 的 A/B 斜排 skew 填充与输出静止的
+启动/排空开销；(b) `tiled_matmul_auto` 对 WS 启用 double-buffering；(c) 两者 mvin/mvout 调度不同
+（OS 一次搬入后算、WS 逐 tile 交错）。端到端差距相当部分来自搬运/双缓冲调度，非纯阵列 skew。
+与自研 4×4 子系统的比较见 §6。
 
 ## 5. 结果表（实测）
 
-| 用例 | 数据流 | 周期 | 访存量 | 利用率 | 备注 |
+| 用例 | 数据流 | 周期 | 访存量 | 端到端效率 | 备注 |
 |:---|:---|:---|:---|:---|:---|
-| 64×64×64 | OS | 3550 | — | 28.8% | 16×16 阵列，INT8 |
-| 64×64×64 | WS | 2268 | — | 45.2% | 16×16 阵列，INT8 |
+| 64×64×64 | OS | 3550 | — | 28.8% | 16×16 阵列，INT8，端到端含搬运 |
+| 64×64×64 | WS | 2268 | — | 45.1% | 16×16 阵列，INT8，端到端含搬运 |
 
 ## 6. 自研 4×4 OS 子系统 vs Gemmini 完整系统（口径说明）
 
@@ -86,4 +93,4 @@ WS 权重预加载后输入流式处理，阵列利用率更高（45.2% vs 28.8%
 | 可比较口径 | 单 tile 周期公式 `K+2N-1+1`、PPA（sky130 实测）| 阵列内部周期（本节）、利用率 |
 
 **结论**：自研子系统的贡献在**自研 RTL + 验证闭环 + PPA 证据链**（docs/05），Gemmini 的贡献在
-**OS/WS 架构对照**（本节：WS 利用率 45.2% vs OS 28.8%，量化了数据流差异）。二者不叠加成"性能对比"。
+**OS/WS 架构对照**（本节：WS 端到端效率 45.1% vs OS 28.8%，量化了数据流差异）。二者不叠加成"性能对比"。
