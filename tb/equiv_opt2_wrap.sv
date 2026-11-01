@@ -1,7 +1,7 @@
 // =============================================================
-// equiv_opt2_wrap : npu_top (baseline) 与 npu_top_opt (CSA optimized) 等价性验证
+// equiv_opt2_wrap : npu_top (baseline) 与 npu_top_opt2 (CSA+输出流水2级) 等价性验证
 //   同输入驱动两实例; 分别握手捕获各自 out_c, 逐元素比对结果值
-//   optimized 输出流水比 baseline 多 1 拍 (out_ready 恒 1 独立握手), 故捕获后比对
+//   optimized 输出流水比 baseline 多 2 拍 (out_ready 恒 1 独立握手), 故捕获后比对
 //   tb_top 以本模块为顶层 (输出采用 baseline 视角) 跑全量端到端测试
 // =============================================================
 module equiv_opt2_wrap #(

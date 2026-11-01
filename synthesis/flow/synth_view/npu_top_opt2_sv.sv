@@ -63,7 +63,6 @@ module npu_top_opt2_sv #(
     wire [15:0] hi_sum [0:N*N-1];
     reg  [15:0] lo_reg [0:N*N-1];
     reg         co_reg [0:N*N-1];
-    reg  [15:0] hi_reg [0:N*N-1];
     reg  [N*N*32-1:0] out_c_reg;
 
     generate
@@ -76,7 +75,7 @@ module npu_top_opt2_sv #(
     endgenerate
 
     reg [1:0] out_valid_pipe;
-    reg done_pipe;
+    reg [1:0] done_pipe;
 
     integer kk;
     always @(posedge clk or negedge rst_n) begin
@@ -84,27 +83,25 @@ module npu_top_opt2_sv #(
             for (kk = 0; kk < N*N; kk = kk + 1) begin
                 lo_reg[kk] <= 16'd0;
                 co_reg[kk] <= 1'b0;
-                hi_reg[kk] <= 16'd0;
                 out_c_reg[kk*32 +: 32] <= 32'd0;
             end
             out_valid_pipe <= 2'd0;
-            done_pipe      <= 1'b0;
+            done_pipe      <= 2'd0;
         end else begin
             for (kk = 0; kk < N*N; kk = kk + 1) begin
                 lo_reg[kk] <= lo_ext[kk][15:0];
                 co_reg[kk] <= lo_ext[kk][16];
             end
             for (kk = 0; kk < N*N; kk = kk + 1) begin
-                hi_reg[kk] <= hi_sum[kk];
                 out_c_reg[kk*32 +: 32] <= {hi_sum[kk], lo_reg[kk]};
             end
             out_valid_pipe <= {out_valid_pipe[0], out_valid_ctrl};
-            done_pipe      <= done_ctrl;
+            done_pipe      <= {done_pipe[0], done_ctrl};
         end
     end
 
     assign out_valid   = out_valid_pipe[1];
-    assign done        = done_pipe;
+    assign done        = done_pipe[1];
     assign out_c_flat  = out_c_reg;
 
 endmodule

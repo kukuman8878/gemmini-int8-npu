@@ -11,7 +11,7 @@ REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
 def _test_exists(ref):
-    """校验 'tb_xxx.test_name' 引用真实存在 (读 tb/xxx.py 找 async def test_name)"""
+    """校验 'tb_xxx.test_name' 或 'tb/xxx.sv' 引用真实存在"""
     if re.match(r"^tb_[a-z0-9_]+\.[a-z0-9_]+$", ref):
         module, _, func = ref.rpartition(".")
         path = os.path.join(REPO, "tb", module + ".py")
@@ -21,6 +21,10 @@ def _test_exists(ref):
             content = f.read()
         if not re.search(rf"^async def {re.escape(func)}\s*\(", content, re.M):
             return False, f"{ref} (async def 不存在)"
+        return True, ""
+    if re.match(r"^tb/[a-z0-9_]+\.sv$", ref):
+        if not os.path.isfile(os.path.join(REPO, ref)):
+            return False, f"{ref} (断言文件不存在)"
         return True, ""
     return True, ""  # 非测试名引用 (命令/说明) 跳过
 

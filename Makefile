@@ -17,7 +17,7 @@ SYS4_SRCS := $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/systolic_4x4.sv
 SYS8_SRCS := $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/systolic_8x8.sv
 
 LOGDIR := logs
-REGRESSION_TESTS := sim_mac sim_mac_v sim_pe sim_pe16 sim_pe_sva sim_skew sim_controller sim_top sim_top_sva sim_equiv sim_equiv_opt sim_equiv_cs sim_fifo sim_fifo_sva sim_array sim_array8 sim_bench
+REGRESSION_TESTS := sim_mac sim_mac_v sim_pe sim_pe16 sim_pe_sva sim_skew sim_controller sim_top sim_top_sva sim_equiv sim_equiv_opt sim_equiv_cs sim_equiv_opt2 sim_fifo sim_fifo_sva sim_array sim_array8 sim_bench
 
 export PYTHONPATH := $(abspath $(TB)):$(abspath verification)
 
@@ -172,13 +172,15 @@ lint:
 	verilator --lint-only -Wall -Wno-fatal -Wno-MULTITOP -Wno-SYNCASYNCNET \
 	  $(RTL)/*.sv $(TB)/pe_16_64.sv $(TB)/skew_systolic_4x4.sv \
 	  $(TB)/npu_top_assert.sv $(TB)/pe_assert.sv $(TB)/fifo_assert.sv \
-	  $(TB)/equiv_wrap.sv $(TB)/equiv_opt_wrap.sv $(TB)/equiv_cs_wrap.sv \
+	  $(TB)/equiv_wrap.sv $(TB)/equiv_opt_wrap.sv $(TB)/equiv_cs_wrap.sv $(TB)/equiv_opt2_wrap.sv \
 	  synthesis/flow/synth_view/input_skew_sv.sv \
 	  synthesis/flow/synth_view/systolic_array_sv.sv \
 	  synthesis/flow/synth_view/systolic_array_opt_sv.sv \
+	  synthesis/flow/synth_view/systolic_array_opt2_sv.sv \
 	  synthesis/flow/synth_view/systolic_array_cs_sv.sv \
 	  synthesis/flow/synth_view/npu_top_sv.sv \
 	  synthesis/flow/synth_view/npu_top_opt_sv.sv \
+	  synthesis/flow/synth_view/npu_top_opt2_sv.sv \
 	  synthesis/flow/synth_view/npu_top_cs_sv.sv
 
 # V12 故障注入 (脚本用 RTL= 覆盖在 /tmp 变异副本上运行, 独立 SIM_BUILD 不污染正常回归)

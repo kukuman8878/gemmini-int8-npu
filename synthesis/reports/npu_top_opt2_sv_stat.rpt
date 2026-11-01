@@ -4,13 +4,13 @@
 === npu_top_opt2_sv ===
 
    Number of wires:              11193
-   Number of wire bits:          21523
+   Number of wire bits:          21524
    Number of public wires:         606
-   Number of public wire bits:   10936
+   Number of public wire bits:   10937
    Number of memories:               0
    Number of memory bits:            0
    Number of processes:              0
-   Number of cells:              13340
+   Number of cells:              13341
      $scopeinfo                     19
      sky130_fd_sc_hd__a211o_1        2
      sky130_fd_sc_hd__a211oi_1      17
@@ -28,7 +28,7 @@
      sky130_fd_sc_hd__and3b_1       17
      sky130_fd_sc_hd__and4_1        33
      sky130_fd_sc_hd__clkinv_1     229
-     sky130_fd_sc_hd__dfrtp_1     2200
+     sky130_fd_sc_hd__dfrtp_1     2201
      sky130_fd_sc_hd__lpflow_inputiso1p_1    312
      sky130_fd_sc_hd__lpflow_isobufsrc_1    344
      sky130_fd_sc_hd__maj3_1      1077
@@ -61,6 +61,6 @@
 
    Area for cell type $scopeinfo is unknown!
 
-   Chip area for module '\npu_top_opt2_sv': 134348.851200
-     of which used for sequential elements: 55052.800000 (40.98%)
+   Chip area for module '\npu_top_opt2_sv': 134373.875200
+     of which used for sequential elements: 55077.824000 (40.99%)
 
