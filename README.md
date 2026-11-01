@@ -11,15 +11,26 @@
 脉动阵列计算子系统（A/B INT8、乘积 INT16、累加 INT32、K=1…256），并以官方 Gemmini/Chipyard 环境做
 WS/OS 架构对照实验。全历史 30+ commit 可查。
 
-## 当前状态（2026-10-31，主线 W1–W11 全部完成）
+## 当前状态（2026-11-01，主线 W1–W16 全部完成）
 
 | 维度 | 状态 |
 |:---|:---|
 | RTL 主线 | mac → pe → input_skew → 阵列 → fifo → controller → npu_top 全闭环（`rtl/`） |
-| 优化变体 | carry-save（`pe_opt`/`npu_top_opt`）、carry-select（`pe_cs`/`npu_top_cs`），均等价性验证通过 |
-| 验证闭环 | 17 个回归目标全绿；Golden/Scoreboard/SVA/覆盖矩阵/故障注入/agent 突变审核；15 条缺陷闭环 |
-| 综合/STA | yosys + OpenSTA（sky130_fd_sc_hd，tt 角），baseline + 2 变体实测报告（`docs/05`） |
+| 优化变体 | carry-save（`pe_opt`/`npu_top_opt`）、carry-select（`pe_cs`/`npu_top_cs`）、CSA+输出流水2级（`npu_top_opt2`），均等价性验证通过 |
+| 验证闭环 | 18 个回归目标全绿；Golden/Scoreboard/SVA/覆盖模型(coverpoint+cross)/故障注入/agent 突变审核；15 条缺陷闭环 |
+| 综合/STA | yosys + OpenSTA（sky130_fd_sc_hd，tt 角），4 方案 PPA 实测（`docs/05`） |
 | Gemmini 对照 | 官方基线测试 PASS + WS/OS 周期对照实测（`docs/06`，环境见 `../chipyard`） |
+| 端侧实测 | 小米 10 上跑通 MobileNetV2 INT8（CPU 9.16ms）+ 真实 1×1 Conv→GEMM 三方一致性（`docs/10`） |
+
+## 三套结果（严禁混用）
+
+| 类别 | 指标 | 边界 |
+|:---|:---|:---|
+| 手机测量 | 小米 10 CPU 推理 9.16 ms | 真实设备延迟，≠ 芯片时延 |
+| RTL/Gemmini 仿真 | 逻辑周期 + 逐元素一致 | 硬件逻辑节拍，≠ 墙钟时间 |
+| EDA 估计 | 面积/关键路径/可达频率 | pre-layout，≠ 流片数据 |
+
+详见 `docs/10_final_report.md`。
 
 ## 环境与版本
 
