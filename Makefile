@@ -122,6 +122,13 @@ sim_equiv_cs:
 	  COCOTB_TEST_MODULES=tb_top \
 	  VERILOG_SOURCES="$(RTL)/controller.sv $(RTL)/input_skew.sv $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/npu_top.sv $(RTL)/pe_cs.sv $(RTL)/systolic_array_cs.sv $(RTL)/npu_top_cs.sv $(TB)/equiv_cs_wrap.sv"
 
+# W15 变体等价性验证 (baseline npu_top vs CSA+2级流水 npu_top_opt2)
+sim_equiv_opt2:
+	$(MAKE) sim COCOTB_TOPLEVEL=equiv_opt2_wrap SIM_BUILD=sim_build/$@ \
+	  COCOTB_RESULTS_FILE=sim_build/$@/results.xml \
+	  COCOTB_TEST_MODULES=tb_top \
+	  VERILOG_SOURCES="$(RTL)/controller.sv $(RTL)/input_skew.sv $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/npu_top.sv $(RTL)/pe_opt2.sv $(RTL)/systolic_array_opt2.sv $(RTL)/npu_top_opt2.sv $(TB)/equiv_opt2_wrap.sv"
+
 # 周期测量基准 (W10): 断言 load/drain/output 分量与 controller 语义一致
 sim_bench:
 	$(MAKE) sim COCOTB_TOPLEVEL=npu_top SIM_BUILD=sim_build/$@ \
