@@ -1,27 +1,35 @@
 {
   "device": {
-    "model": "",
-    "manufacturer": "",
-    "soc": "",
-    "android_version": "",
-    "api_level": "",
-    "abi": "",
-    "storage_total_gb": "",
-    "storage_free_gb": "",
-    "memory_total_gb": "",
-    "battery_level_pct": "",
-    "temperature_celsius": "",
-    "usb_debug": false
+    "model": "Mi 10",
+    "manufacturer": "Xiaomi",
+    "soc": "kona",
+    "android_version": "13",
+    "api_level": "33",
+    "abi": "arm64-v8a",
+    "storage_total_gb": 226.28,
+    "storage_free_gb": 187.15,
+    "memory_total_gb": 11.32,
+    "battery_level_pct": 76,
+    "temperature_celsius": 32.1,
+    "usb_debug": true
   },
   "model": {
     "name": "MobileNetV2",
     "quantization": "INT8",
     "input_resolution": "224x224x3",
-    "source_url": "",
-    "license": "",
-    "sha256": "",
-    "input_mean": [127.5, 127.5, 127.5],
-    "input_std": [127.5, 127.5, 127.5],
+    "source_url": "https://storage.googleapis.com/download.tensorflow.org/models/tflite_11_05_08/mobilenet_v2_1.0_224_quant.tgz",
+    "license": "Apache-2.0 (TensorFlow 官方预训练模型)",
+    "sha256": "f08d447cde49b4e0446428aa921aff0a14ea589fa9c5817b31f83128e9a43c1d",
+    "input_mean": [
+      127.5,
+      127.5,
+      127.5
+    ],
+    "input_std": [
+      127.5,
+      127.5,
+      127.5
+    ],
     "labels_count": 1001,
     "verification_sample": {
       "input_sha256": "",
@@ -38,7 +46,7 @@
     "backend": "cpu"
   },
   "audit": {
-    "date": "",
+    "date": "2026-11-01T13:53:51.865284",
     "operator": "",
     "notes": ""
   }

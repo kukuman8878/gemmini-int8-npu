@@ -62,4 +62,7 @@ golden = int8(A) @ int8(B) + bias   (INT32 累加)
 |:---|:---|:---|
 | Python golden（int8 语义 INT32 累加）| A[49,320]×B[320,1280] 全量 | 基准 |
 | 自研 RTL（npu_top）| mi=0 整行 320 tile × K 分块[256,64] | **5120 元素 0 mismatch** |
-| Gemmini 仿真 | 待测（W14 门禁最后一项）| — |
+| Gemmini 仿真（tiled_matmul OS）| M=49,K=320,N=16 子集 tile | **784 元素 0 mismatch** |
+
+三方一致性闭环：同一真实 1×1 Conv→GEMM 负载，Python 整数黄金 / 自研 4×4 RTL / Gemmini 16×16 仿真
+在相同 int8 语义（clamp 减零点）+ INT32 累加下**逐元素一致**。
