@@ -129,6 +129,13 @@ sim_bench:
 	  COCOTB_TEST_MODULES=tb_bench \
 	  VERILOG_SOURCES="$(RTL)/controller.sv $(RTL)/input_skew.sv $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/npu_top.sv"
 
+# W14 真实 1×1 Conv→GEMM 的 RTL 一致性验证 (TILES 环境变量控制 tile 数)
+sim_phone_layer:
+	TILES=$(TILES) $(MAKE) sim COCOTB_TOPLEVEL=npu_top SIM_BUILD=sim_build/$@ \
+	  COCOTB_RESULTS_FILE=sim_build/$@/results.xml \
+	  COCOTB_TEST_MODULES=tb_phone_layer \
+	  VERILOG_SOURCES="$(RTL)/controller.sv $(RTL)/input_skew.sv $(RTL)/pe.sv $(RTL)/systolic_array.sv $(RTL)/npu_top.sv"
+
 # 批量随机回归入口 (SEED/PAIRS 由环境传入, 见 verification/random_regression.py)
 sim_top_seeded:
 	SEED=$(SEED) PAIRS=$(PAIRS) $(MAKE) sim COCOTB_TOPLEVEL=npu_top SIM_BUILD=sim_build/$@ \

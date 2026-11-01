@@ -1,0 +1,29 @@
+{
+  "array_dim": 4,
+  "K_max": 256,
+  "M": 49,
+  "K": 320,
+  "N": 1280,
+  "M_pad": 52,
+  "N_pad": 1280,
+  "M_tiles": 13,
+  "N_tiles": 320,
+  "K_blocks": [
+    256,
+    64
+  ],
+  "total_tiles": 4160,
+  "total_tasks": 8320,
+  "padding": {
+    "M_zero_rows": 3,
+    "N_zero_cols": 0
+  },
+  "quant_align": {
+    "input_zero_point": 130,
+    "weight_zero_point": 125,
+    "contract": "uint8 - zero_point → int8 (clamp -128..127)",
+    "input_clamped_elems": 114,
+    "weight_clamped_elems": 2
+  },
+  "bias": "最终累加一次"
+}

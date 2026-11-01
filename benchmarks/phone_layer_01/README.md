@@ -35,4 +35,31 @@ benchmarks/phone_layer_01/
 ```bash
 python3 benchmarks/phone_layer_01/extract.py          # 抽取首选层 → npy + quant.json
 python3 benchmarks/phone_layer_01/extract.py --list   # 枚举全部 pointwise 层
+python3 benchmarks/phone_layer_01/conversion.py       # 量化对齐 + 切块 + K 分块 + golden
+make sim_phone_layer TILES=2                          # RTL 一致性 (2 列 tile 快速)
+make sim_phone_layer                                  # RTL 一致性 (mi=0 整行 320 tile 全量)
 ```
+
+## 量化契约（重要发现，W14）
+
+MobileNetV2 是 **uint8 非对称量化**（zero_point≠128）：本层 input zp=130、weight zp=125。
+减零点后值域为 input `[-130,125]`、weight `[-124,130]`，**轻微超出 signed int8 `[-128,127]`**。
+
+而自研 RTL 输入为 `signed [7:0]`（int8）。故对齐契约定为：
+
+```
+int8 = clamp(uint8 - zero_point, -128, 127)
+golden = int8(A) @ int8(B) + bias   (INT32 累加)
+```
+
+实测 clamp 边界：权重真实仅 **2 个元素**溢出（uint8 253/254 → 129/130），输入 114 个元素
+是随机输入用 0..255 均匀导致的假象（真实 ReLU 激活集中在 zero_point 附近，不会到 0..129 负区）。
+此契约已写入 `tiling.json.quant_align`，确保 RTL 与 golden 在同一 int8 语义下逐元素一致。
+
+## 一致性验证结果
+
+| 路径 | 范围 | 结果 |
+|:---|:---|:---|
+| Python golden（int8 语义 INT32 累加）| A[49,320]×B[320,1280] 全量 | 基准 |
+| 自研 RTL（npu_top）| mi=0 整行 320 tile × K 分块[256,64] | **5120 元素 0 mismatch** |
+| Gemmini 仿真 | 待测（W14 门禁最后一项）| — |
