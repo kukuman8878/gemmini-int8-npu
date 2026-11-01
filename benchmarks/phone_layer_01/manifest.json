@@ -1,0 +1,24 @@
+{
+  "model_hash_sha256": "f08d447cde49b4e0446428aa921aff0a14ea589fa9c5817b31f83128e9a43c1d",
+  "op_name": "pointwise_conv_1x1_320_1280",
+  "dims": {
+    "M": 49,
+    "K": 320,
+    "N": 1280
+  },
+  "dtype": "int8 (uint8 量化表示)",
+  "layout": "NHWC",
+  "input_shape_raw": [
+    1,
+    7,
+    7,
+    320
+  ],
+  "filter_shape_raw": [
+    1280,
+    1,
+    1,
+    320
+  ],
+  "generated_by": "benchmarks/phone_layer_01/extract.py"
+}
