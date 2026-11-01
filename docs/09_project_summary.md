@@ -50,18 +50,24 @@ WS/OS 对照：64×64×64 端到端 OS 3550 cycles（28.8%）、WS 2268 cycles�
 
 ## 3. 简历 bullet（按岗位取用）
 
+**项目一句话**（简历项目栏）：独立实现 4×4 INT8 脉动阵列加速器（SystemVerilog），完成验证闭环、
+sky130 综合/STA 与 PPA 优化，并以小米 10 端侧模型 + Gemmini 官方基线做软硬件协同对照。
+
 **前端设计**：
-- 独立用 SystemVerilog 实现 4×4 OS 脉动阵列 INT8 GEMM 子系统（MAC/PE/skew/阵列/FIFO/FSM/顶层），K=1…256，INT32 累加，可综合无锁存器。
-- 完成 yosys+OpenSTA（sky130）综合/STA，实测关键路径 7.32ns、面积 83774 µm²；设计 carry-save 与 carry-select 两变体并做 PPA 对比（频率 +19% vs 面积 +50% 的取舍）。
+- 独立用 SystemVerilog 实现 4×4 OS 脉动阵列 INT8 GEMM 子系统（MAC/PE/skew/阵列/FIFO/FSM/顶层），K=1…256，可综合无锁存器。
+- 完成 yosys+OpenSTA（sky130）综合/STA，4 方案 PPA 对比（baseline 7.32ns/83774µm²；carry-save 6.13ns、carry-select 6.90ns、CSA+输出流水 7.78ns），并定位关键路径为累加器进位链/乘法压缩。
+- 从真实 MobileNetV2 模型抽取 1×1 卷积（Cin=320→Cout=1280）映射为 GEMM，处理 uint8 非对称量化→int8 对齐，Python golden / 自研 RTL / Gemmini 三方逐元素一致（0 mismatch）。
 
 **验证**：
-- 搭建 cocotb+Icarus 验证平台（Python 整数 golden + Scoreboard + 覆盖矩阵 V01–V12 + SVA A1–A6 + 故障注入），17 个回归目标全绿。
+- 搭建 cocotb+Icarus 验证平台（Python 整数 golden + Scoreboard + SVA A1–A6 + 功能覆盖模型 coverpoint 28/28 + 故障注入），18 个回归目标全绿。
 - 引入 agent 突变审核闭环，捕获 3 个"假绿"测试与等价性门禁缺陷（Icarus `$error` 非致命），15 条 bug 全闭环。
 
-**架构**：
-- 跑通官方 Gemmini/Chipyard 基线（RISC-V 工具链 + Verilator），完成 WS/OS 周期对照（64×64×64：WS 2268 vs OS 3550 cycles，WS 快 56%），并写清与自研子系统的层次口径。
+**架构 / 端侧**：
+- 跑通官方 Gemmini/Chipyard 基线（从零构建 RISC-V 工具链 + Verilator + NDK），WS/OS 周期对照（WS 2268 vs OS 3550 cycles，快 56%）。
+- 小米 10 上实测 MobileNetV2 INT8 推理（CPU 9.16ms，XNNPACK 4 线程），构建 LiteRT benchmark 工具（Bazel + NDK 交叉编译）。
 
-**通用能力**：SystemVerilog / Python / cocotb / Verilator / Yosys / OpenSTA / Makefile / git（30+ commit 迭代）。
+**通用能力**：SystemVerilog / Python / cocotb / Verilator / Yosys / OpenSTA / Makefile / git（40+ commit）；
+adb / Android 端侧测试 / LiteRT / Bazel / NDK 交叉编译。
 
 ## 4. 口径红线（面试/简历一致遵守）
 
