@@ -1,0 +1,37 @@
+=== 全部 1×1 pointwise 层 (Cin→Cout) ===
+  Cin=  16 -> Cout=  96
+  Cin=  24 -> Cout= 144
+  Cin=  24 -> Cout= 144
+  Cin=  32 -> Cout=  16
+  Cin=  32 -> Cout= 192
+  Cin=  32 -> Cout= 192
+  Cin=  32 -> Cout= 192
+  Cin=  64 -> Cout= 384
+  Cin=  64 -> Cout= 384
+  Cin=  64 -> Cout= 384
+  Cin=  64 -> Cout= 384
+  Cin=  96 -> Cout=  24
+  Cin=  96 -> Cout= 576
+  Cin=  96 -> Cout= 576
+  Cin=  96 -> Cout= 576
+  Cin= 144 -> Cout=  24
+  Cin= 144 -> Cout=  32
+  Cin= 160 -> Cout= 960
+  Cin= 160 -> Cout= 960
+  Cin= 160 -> Cout= 960
+  Cin= 192 -> Cout=  32
+  Cin= 192 -> Cout=  32
+  Cin= 192 -> Cout=  64
+  Cin= 320 -> Cout=1280
+  Cin= 384 -> Cout=  64
+  Cin= 384 -> Cout=  64
+  Cin= 384 -> Cout=  64
+  Cin= 384 -> Cout=  96
+  Cin= 576 -> Cout=  96
+  Cin= 576 -> Cout=  96
+  Cin= 576 -> Cout= 160
+  Cin= 960 -> Cout= 160
+  Cin= 960 -> Cout= 160
+  Cin= 960 -> Cout= 320
+  Cin=1280 -> Cout=1001
+共 35 个

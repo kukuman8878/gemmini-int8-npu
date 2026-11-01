@@ -45,8 +45,11 @@
     "groups": 3,
     "backend": "cpu",
     "inference_avg_ms": 9.16,
-    "inference_median_ms": 9.16,
-    "inference_p90_ms": 9.17
+    "inference_group_avgs_ms": [
+      9.17,
+      9.16,
+      9.16
+    ]
   },
   "audit": {
     "date": "2026-11-01T13:53:51.865284",

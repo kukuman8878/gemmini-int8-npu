@@ -12,7 +12,7 @@
 | 2 | 22.06 | 9.16 | 9.14 | 9.22 | 110 |
 | 3 | 19.10 | 9.16 | 9.14 | 9.39 | 110 |
 
-- 推理延迟 median ≈ **9.16 ms**，p90 ≈ **9.17 ms**（3 组 avg 极稳定，std ~0.01-0.04ms）
+- 推理延迟 **9.16 ms**（3 组 avg 9.17/9.16/9.16，各 110 runs，极稳定 std ~0.01-0.04ms；benchmark_model 仅输出 avg/min/max，无逐 run 分布故不报 median/p90）
 - 吞吐：15.65 MB/s；内存占用：~14.6 MB
 - 后端：**CPU（XNNPACK）**；GPU delegate 未编译进 benchmark_model（`--use_gpu` 未注册），NPU 未测
 
