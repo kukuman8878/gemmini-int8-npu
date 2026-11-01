@@ -1,0 +1,45 @@
+{
+  "device": {
+    "model": "",
+    "manufacturer": "",
+    "soc": "",
+    "android_version": "",
+    "api_level": "",
+    "abi": "",
+    "storage_total_gb": "",
+    "storage_free_gb": "",
+    "memory_total_gb": "",
+    "battery_level_pct": "",
+    "temperature_celsius": "",
+    "usb_debug": false
+  },
+  "model": {
+    "name": "MobileNetV2",
+    "quantization": "INT8",
+    "input_resolution": "224x224x3",
+    "source_url": "",
+    "license": "",
+    "sha256": "",
+    "input_mean": [127.5, 127.5, 127.5],
+    "input_std": [127.5, 127.5, 127.5],
+    "labels_count": 1001,
+    "verification_sample": {
+      "input_sha256": "",
+      "expected_top1": ""
+    }
+  },
+  "benchmark": {
+    "tool": "benchmark_model",
+    "tool_version": "",
+    "num_threads": 4,
+    "warmup_runs": 10,
+    "num_runs": 50,
+    "groups": 3,
+    "backend": "cpu"
+  },
+  "audit": {
+    "date": "",
+    "operator": "",
+    "notes": ""
+  }
+}

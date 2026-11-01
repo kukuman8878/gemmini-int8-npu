@@ -24,3 +24,9 @@ synthesis/flow/*/results/
 # 编辑器
 *.swp
 .vscode/
+
+# W13 手机端实测 (模型可重下, 由 download_model.sh + SHA-256 复现; 原始日志不入库)
+android/models/*.tflite
+android/models/*.tgz
+android/bin/
+reports/mobile/*.log
