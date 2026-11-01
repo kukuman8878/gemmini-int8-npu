@@ -179,6 +179,12 @@ lint:
 fault_inject:
 	bash scripts/fault_injection.sh
 
+# W15 覆盖模型 (coverpoint + cross + 被排除项; 校验测试映射真实存在)
+.PHONY: coverage
+coverage:
+	python3 verification/coverage_matrix.py
+	python3 verification/coverage_model.py
+
 sim_array_fault:
 	$(MAKE) sim COCOTB_TOPLEVEL=systolic_4x4 SIM_BUILD=sim_build/fault_inject \
 	  COCOTB_RESULTS_FILE=sim_build/fault_inject/results.xml \
