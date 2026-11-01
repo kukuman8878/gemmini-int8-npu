@@ -1,0 +1,5 @@
+INFO: [benchmark_litert_model.h:94] Model initialization: 19.10 ms
+INFO: [benchmark_litert_model.h:100] Inference (avg):      9.16 ms (110 runs)
+INFO: [benchmark_litert_model.h:104] Inference (min):      9.14 ms
+INFO: [benchmark_litert_model.h:106] Inference (max):      9.39 ms
+INFO: [benchmark_litert_model.h:115] Throughput:           15.67 MB/s

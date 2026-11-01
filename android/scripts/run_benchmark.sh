@@ -19,7 +19,7 @@ mkdir -p "$OUTDIR"
 
 WARMUP=10
 RUNS=50
-GROUPS=3
+NGROUPS=3
 
 echo "=== 检查设备 ==="
 $ADB devices
@@ -32,8 +32,8 @@ $ADB push "$BIN" "$DEV_BIN" > /dev/null
 $ADB shell chmod 755 "$DEV_BIN"
 
 STAMP=$(date +%Y%m%d_%H%M%S)
-for g in $(seq 1 $GROUPS); do
-  echo "=== 第 $g/$GROUPS 组: warmup=$WARMUP runs=$RUNS ==="
+for g in $(seq 1 $NGROUPS); do
+  echo "=== 第 $g/$NGROUPS 组: warmup=$WARMUP runs=$RUNS ==="
   out="$OUTDIR/benchmark_${STAMP}_group${g}.log"
   $ADB shell "$DEV_BIN" \
     --graph="$DEV_MODEL" \

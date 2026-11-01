@@ -38,12 +38,15 @@
   },
   "benchmark": {
     "tool": "benchmark_model",
-    "tool_version": "",
+    "tool_version": "LiteRT 2.3 (bazel android_arm64)",
     "num_threads": 4,
-    "warmup_runs": 10,
-    "num_runs": 50,
+    "warmup_runs": 55,
+    "num_runs": 110,
     "groups": 3,
-    "backend": "cpu"
+    "backend": "cpu",
+    "inference_avg_ms": 9.16,
+    "inference_median_ms": 9.16,
+    "inference_p90_ms": 9.17
   },
   "audit": {
     "date": "2026-11-01T13:53:51.865284",
