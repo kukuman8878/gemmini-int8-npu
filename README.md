@@ -1,113 +1,113 @@
 # gemmini-int8-npu
 
-基于 Gemmini 的可配置 INT8 脉动阵列加速器：数字 IC 前端设计 + 验证 + PPA 优化 + Gemmini 架构对照。
+**用代码设计了一个"专门算矩阵乘法的电路"，并证明它能被翻译成真实电路、算得对，而且有真实的面积和速度数据。**
 
-> 项目目标与验收标准见 `../Gemmini_数字IC三方向项目目标与验收文档.md`（V1.0 基线）。
-> 本仓库只记录**已完成、可复现**的工作；所有性能数字均来自工具报告，未完成项以 TODO/待测标注。
->
-> **新手第一次来？先看 [`TUTORIAL.md`](TUTORIAL.md)** —— 从零开始、每个步骤都有说明和预期结果，不讲黑话。
+（名字解释：gemmini 是我们参考的伯克利开源项目名；int8 指每个数字用 8 位二进制表示，其中"位"就是一个 0 或 1 的信息单位，位越少电路越省面积省电、但精度越低；npu 是"神经网络处理器"的缩写，神经网络就是让机器像人一样"看""听"的那套算法，通俗说就是 AI 芯片）
 
-## 一句话定义
+## 这是什么？（30 秒看懂）
 
-参考 Gemmini 的 PE 与 OS/WS 数据流，**独立用 SystemVerilog 从零实现**可综合、可验证、可分析的 signed INT8
-脉动阵列计算子系统（A/B INT8、乘积 INT16、累加 INT32、K=1…256），并以官方 Gemmini/Chipyard 环境做
-WS/OS 架构对照实验。全历史 30+ commit 可查。
+先说清楚"矩阵乘法"是什么：矩阵可以理解成一张填满数字的表格；矩阵乘法就是拿两张表格，按规则算出一张新表格，过程里要做大量的"两个数相乘、再把结果累加"。
 
-## 当前状态（2026-11-01，主线 W1–W16 全部完成）
+现在想象你每天要算几百万道这样的题。一个人算太慢，怎么办？
 
-| 维度 | 状态 |
-|:---|:---|
-| RTL 主线 | mac → pe → input_skew → 阵列 → fifo → controller → npu_top 全闭环（`rtl/`） |
-| 优化变体 | carry-save（`pe_opt`/`npu_top_opt`）、carry-select（`pe_cs`/`npu_top_cs`）、CSA+输出流水2级（`npu_top_opt2`），均等价性验证通过 |
-| 验证闭环 | 18 个回归目标全绿；Golden/Scoreboard/SVA/覆盖模型(coverpoint+cross)/故障注入/agent 突变审核；15 条缺陷闭环 |
-| 综合/STA | yosys + OpenSTA（sky130_fd_sc_hd，tt 角），4 方案 PPA 实测（`docs/05`） |
-| Gemmini 对照 | 官方基线测试 PASS + WS/OS 周期对照实测（`docs/06`，环境见 `../chipyard`） |
-| 端侧实测 | 小米 10 上跑通 MobileNetV2 INT8（CPU 9.16ms）+ 真实 1×1 Conv→GEMM 三方一致性（`docs/10`） |
+答案是：找一群人站成方阵，每个人只负责结果表格里的一个格子，数据在人群里像流水线一样、一拍一拍地往前传，大家同时算。因为数据"像心跳一样有节奏地跳动"，所以叫"脉动阵列"——这就是我们这个项目的核心。
 
-## 三套结果（严禁混用）
+这个项目做的四件事：
+1. 用代码把上面那"一群人"写成一个电路
+2. 在电脑上模拟它运行（假装它就是一块真实芯片，让电脑照着算），证明它算得对
+3. 把代码翻译成真实的门电路（芯片里最基础的"开关零件"，比如"两个开关都开才通电"的与门），量出它占多大面积、能跑多快
+4. 跟参考的开源项目（Gemmini）对比，确认算出来的结果一致
 
-| 类别 | 指标 | 边界 |
-|:---|:---|:---|
-| 手机测量 | 小米 10 CPU 推理 9.16 ms | 真实设备延迟，≠ 芯片时延 |
-| RTL/Gemmini 仿真 | 逻辑周期 + 逐元素一致 | 硬件逻辑节拍，≠ 墙钟时间 |
-| EDA 估计 | 面积/关键路径/可达频率 | pre-layout，≠ 流片数据 |
+## 新手从这里开始
 
-详见 `docs/10_final_report.md`。
+如果你是第一次来，推荐按这个顺序：
 
-## 环境与版本
+1. 先读新手教程 [TUTORIAL.md](TUTORIAL.md) —— 从零开始，每个步骤都有说明、命令和预期结果
+2. 跟着跑一遍（只要 3 条命令，见下面的"快速开始"）
+3. 想深入了解，再看 docs/ 文件夹里的文档
 
-| 工具 | 版本 | 用途 |
-|:---|:---|:---|
-| Verilator | 5.052（默认 conda）| lint / C++ TB / SVA 后端 |
-| Icarus Verilog | 12.0 | cocotb 仿真后端 |
-| cocotb | 2.1.0 | Python TB |
-| Python / NumPy | 3.14.6 / 2.5.2 | Golden model |
-| Yosys | 0.38+92（conda env `synth`）| 综合 |
-| OpenROAD / OpenSTA | 2.0-12381（同 env）| 静态时序分析 |
-| sky130 PDK | open_pdks.sky130a（`synth` env）| 标准单元库（tt_025C_1v80） |
-| Chipyard / Gemmini | `e0207441` / `8c3f9923`（`../chipyard`）| 官方基线对照 |
+## 这个项目做了什么（5 件事）
 
-## 目录结构
+| 做了什么 | 大白话 |
+|---|---|
+| 写了一个电路 | 用 SystemVerilog 语言（写芯片用的"代码语言"，类似写文章的"中文"），从零写了 16 个"小计算员"排成的 4×4 方阵，加上一个安排它们干活顺序的"调度器" |
+| 证明算得对 | 18 组测试全通过：用 Python（一种写程序的语言）先把正确答案算出来，再和电路结果逐个数字对比，一模一样 |
+| 证明能变成真实电路 | 用工具把代码翻译成门电路，量出面积约 8.4 万平方微米（微米 = 百万分之一米；约 0.084 平方毫米，约等于十几根头发并排的横截面） |
+| 测了速度 | 在 100MHz（每秒 1 亿次心跳）下能跑，还试了 3 种优化方案对比 |
+| 跟权威对比 | 和伯克利（美国一所大学）的开源项目（代码公开、谁都能看能用）Gemmini 跑同样的矩阵乘法，结果一致 |
 
-```text
-rtl/              RTL（mac/pe/input_skew/systolic_array/fifo/controller/npu_top + 优化变体 *_opt/*_cs）
-tb/               cocotb TB + Verilator C++ TB + 等价性 wrapper + SVA 断言
-verification/     golden_model.py、scoreboard、随机回归、覆盖矩阵
-synthesis/        SDC、flow 脚本（synth/sta/run_*）、synth_view、reports
-gemmini_baseline/ 官方 Gemmini 版本记录、README
-benchmarks/       W14 真实 1×1 Conv→GEMM 测试包（phone_layer_01）
-android/          W13 小米10 端侧实测脚本 + 设备 manifest
-docs/             01 需求 / 02 架构 / 03 接口 / 04 验证 / 05 PPA / 06 对照 / 07 限制 / 08 Bug 日志
-scripts/          故障注入等辅助脚本
-logs/             回归日志 + Gemmini 官方测试输出
-```
+## 快速开始（3 条命令）
 
-## 快速开始（一键验证）
+前提：装好工具（方法见 TUTORIAL.md），并且已经把这份代码复制到你自己电脑上（这一步叫 clone，其实就是"下载代码"）。
+
+下面每条命令开头都是 `make`，它是"帮你执行后面那件事"的命令，你只要原样敲进去、回车即可：
 
 ```bash
-make lint             # Verilator lint 全部 RTL + synth_view + 等价 wrapper（0 警告）
-make regress          # 全部 17 个仿真目标（回归日志到 logs/）
-make sim_top          # npu_top 端到端（基本/K随机/暂停/反压/连续任务/中途复位/非法配置）
-make sim_top_sva      # SVA 断言（Verilator --assert 后端；另有 sim_pe_sva/sim_fifo_sva）
-make sim_equiv        # 综合视图 vs 原 RTL 逐拍等价（另有 sim_equiv_opt/sim_equiv_cs）
-make sim_bench        # 周期测量（load=K/drain=2N-1/out=1）
-make fault_inject     # V12 故障注入（验证回归能捕获缺陷）
-make synth            # baseline 综合+STA（sky130）；变体见 run_synth_opt.sh/run_synth_cs.sh
+make lint       # 检查代码有没有低级错误（像作文查错别字）
+make regress    # 跑全部 18 组测试，最后显示 "REGRESSION PASS"（英文，意思是"测试全通过"）
+make sim_top    # 再跑一个完整的大任务（里面含 8 个小检查），最后显示 "TESTS=8 PASS=8"（8 项全过）
 ```
 
-## 测试覆盖（V01–V12，`docs/04`）
+## 关键结果（做出了什么）
 
-- **功能**：MAC 边界（±128×±128 等 245 组穷举）、PE 转发/累加/门控、阵列 K=1…256（含 K>N 部分归约）、
-  FIFO 空/满/同时读写/回绕、controller 非法配置/busy 拒绝/同拍 cfg+start、端到端反压/连续任务/中途复位。
-- **断言**：A1 背压稳定 / A2 FIFO 满写空读 / A3 busy-state 一致 / A4 复位合法态 / A5 无效拍不改 acc /
-  A6 DRAIN 段进度（A1/A2 经变异验证可触发）。
-- **等价性**：综合视图 vs RTL 逐拍、两优化变体 vs baseline 结果值（均 `$fatal` 门禁 + 突变验证）。
-- **闭环**：15 条真实缺陷"触发用例—波形—根因—修复 commit—回归"（`docs/08`）。
+### 一、面积和速度
 
-## 综合 / PPA 结果（`docs/05`，sky130 tt_025C_1v80，10ns@100MHz）
+我们的电路在 100MHz 的时钟下能正常工作。先解释：100MHz 就是每秒 1 亿次"心跳"，而 1 秒 = 10 亿纳秒，所以每次心跳只有 10 纳秒（纳秒是时间单位，1 纳秒 = 十亿分之一秒）。
 
-| 方案 | 面积 (µm²) | WNS @10ns | 最小时钟周期 | 可达频率 | 完成周期(K=256) |
-|:---|:---|:---|:---|:---|:---|
-| Baseline | 83774.10 | 2.68 | 7.32 ns | ~137 MHz | 264 |
-| carry-save | 125964.56 | 3.87 | 6.13 ns | ~163 MHz | 265 |
-| carry-select | 83467.55 | 3.10 | 6.90 ns | ~145 MHz | 264 |
+| 指标 | 数值 | 大白话 |
+|---|---|---|
+| 面积 | 约 8.4 万平方微米 | 这个电路要占多大芯片面积（约 0.084 平方毫米，约等于十几根头发并排的横截面） |
+| 最慢路径 | 7.32 纳秒 | 电路里最慢的一条计算路要花的时间 |
+| 余量 | 2.68 纳秒 | 每次心跳只有 10 纳秒，电路 7.32 就算完，还剩 2.68 富余 |
 
-结论：32 位累加器进位链为固有瓶颈；carry-save 频率 +19% 但面积 +50%，carry-select 近零收益。
+我们还做了 3 种优化方案对比：其中一种能提速 19%，但要贵 50% 的面积——这就是芯片设计里"速度和面积要权衡"的典型例子。
 
-## Gemmini 对照（`docs/06`）
+### 二、跟官方原版 Gemmini 对比
 
-官方基线 PASS（`mvin_mvout`/`matmul_os`/`matmul_ws`）；WS/OS 周期对照（64×64×64，端到端含搬运）：
-OS 3550 cycles（28.8%）、WS 2268 cycles（45.1%）——WS 快 56%。自研 4×4 子系统与 Gemmini 完整系统
-**层次不同不直接对比**，口径说明见 `docs/06 §6`。
+同一个矩阵乘法（让一队"小计算员"两两相乘再相加，很多 AI 任务底层都在算这个），官方原版 Gemmini 跑一遍、我们也跑一遍，结果一致。还发现：官方还支持另一种搬运数据的方式，比我们用的这种快 56%。
 
-## 个人贡献边界
+### 三、真实手机实测
 
-- 自研部分：`rtl/` 全部 RTL、`tb/`、`verification/`、`synthesis/`、`benchmarks/`、`docs/`、`scripts/`。
-- 外部参考：`../gemmini-ref`、`../chipyard`（Gemmini/Chipyard 官方源码，仅用于架构对照与基线实验，不冒充自研）。
+在小米 10 手机上跑了真实的 AI 模型（用来识别图片的），识别一次约 9.16 毫秒（毫秒 = 千分之一秒，比纳秒大一百万倍）。把模型里真正要算的那一步矩阵乘法抽出来，喂给我们的电路、Gemmini、以及 Python 算的标准答案，三者结果完全一致。
 
-## 复现说明
+（9.16 毫秒是整次识别的总时间，7.32 纳秒只是一次心跳，两者尺度不同、不冲突）
 
-1. `git log` 查看全部设计迭代记录；每个 RTL 文件头注释写明来源与验证状态。
-2. 综合/STA：`source .../synth conda env` 后 `make synth`（或 `synthesis/flow/run_synth*.sh`），PDK 路径可 `CONDA_BASE/PDK_DIR` 覆盖。
-3. Gemmini 基线：环境在 `../chipyard`（commit `e0207441`），构建命令与踩坑见 `docs/06 §2`。
-4. 所有性能数字以 `synthesis/reports/` 与 `logs/` 为准，不预填、不估算。
+## 文件夹都是干嘛的
+
+| 文件夹 | 放什么 |
+|---|---|
+| rtl/ | 我们写的电路代码（核心；rtl 是"寄存器传输级"（Register Transfer Level）的缩写，意思就是"用代码描述电路"） |
+| tb/ | 给电路喂各种输入、看输出对不对（测试代码） |
+| verification/ | 用 Python 另写一套程序算好标准答案，再跟电路结果逐个比对（验证工具） |
+| synthesis/ | 把代码翻译成"门电路"的脚本和报告（门电路 = 芯片里最基础的小单元，比如"两个输入都是 1 才输出 1"的"与门"） |
+| docs/ | 各种文档 |
+| benchmarks/ | 从真实模型抽出来的测试数据 |
+| android/ | 手机实测脚本（脚本 = 一段让电脑自动干活的小程序） |
+| scripts/ | 辅助脚本 |
+
+## 用到的工具
+
+| 工具 | 干嘛的 |
+|---|---|
+| Verilator / Icarus | 两个免费的电路仿真器（在电脑上"跑"电路，不造真芯片） |
+| cocotb | 让你能用 Python（写程序的语言）来写测试 |
+| Yosys | 把电路代码翻译成门电路 |
+| OpenROAD | 检查电路跑得够不够快 |
+| sky130 | 一份公开的"工艺库"：芯片由无数个像小开关一样的"晶体管"组成（通电代表 1、断电代表 0），这份说明书规定了用哪种晶体管、怎么摆 |
+
+## 哪些是我自己写的、哪些是参考的（边界说明）
+
+- **自己写的**：rtl/（电路代码）、tb/（测试）、verification/（验证工具）、synthesis/（综合脚本，综合 = 把代码翻译成门电路）、benchmarks/、docs/、scripts/、android/
+- **参考的**：Gemmini 和 Chipyard 是伯克利（美国一所大学）的开源项目，我们只拿来跑对照实验，绝不冒充是自己写的
+
+## 想深入了解，看这些
+
+- [TUTORIAL.md](TUTORIAL.md) —— 新手手把手教程（从零开始）
+- [GEMINI_SETUP.md](GEMINI_SETUP.md) —— 搭建官方 Gemmini 对照环境（进阶，要 60GB 空间）
+- docs/ —— 需求、架构、接口约定（各模块之间怎么连、数据怎么传的规矩）、验证计划（怎么证明电路是对的）、PPA 报告（PPA = 功耗、性能、面积，衡量芯片好坏的三项指标）、Bug 记录
+
+## 复现说明（给想自己动手的人）
+
+1. 综合和时序分析（时序分析 = 检查电路跑得够不够快）：装好 synth（合成工具）环境后跑 `make synth`，报告在 synthesis/reports/ 文件夹
+2. Gemmini 对照：环境搭建见 GEMINI_SETUP.md
+3. 所有性能数字都来自工具实际跑出来的报告，不预填、不估算
