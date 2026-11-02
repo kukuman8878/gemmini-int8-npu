@@ -53,7 +53,8 @@ tb/               cocotb TB + Verilator C++ TB + 等价性 wrapper + SVA 断言
 verification/     golden_model.py、scoreboard、随机回归、覆盖矩阵
 synthesis/        SDC、flow 脚本（synth/sta/run_*）、synth_view、reports
 gemmini_baseline/ 官方 Gemmini 版本记录、README
-benchmark/        workload、comparison.csv
+benchmarks/       W14 真实 1×1 Conv→GEMM 测试包（phone_layer_01）
+android/          W13 小米10 端侧实测脚本 + 设备 manifest
 docs/             01 需求 / 02 架构 / 03 接口 / 04 验证 / 05 PPA / 06 对照 / 07 限制 / 08 Bug 日志
 scripts/          故障注入等辅助脚本
 logs/             回归日志 + Gemmini 官方测试输出
@@ -99,7 +100,7 @@ OS 3550 cycles（28.8%）、WS 2268 cycles（45.1%）——WS 快 56%。自研 4
 
 ## 个人贡献边界
 
-- 自研部分：`rtl/` 全部 RTL、`tb/`、`verification/`、`synthesis/`、`benchmark/`、`docs/`、`scripts/`。
+- 自研部分：`rtl/` 全部 RTL、`tb/`、`verification/`、`synthesis/`、`benchmarks/`、`docs/`、`scripts/`。
 - 外部参考：`../gemmini-ref`、`../chipyard`（Gemmini/Chipyard 官方源码，仅用于架构对照与基线实验，不冒充自研）。
 
 ## 复现说明
