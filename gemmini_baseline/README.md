@@ -4,9 +4,9 @@
 
 | 项目 | 值 |
 |:---|:---|
-| 本地路径 | `/home/kukuman/NPU/gemmini-ref`（clone 自 https://github.com/ucb-bar/gemmini） |
+| 本地路径 | `../gemmini-ref`（clone 自 https://github.com/ucb-bar/gemmini） |
 | Gemmini commit | `8c3f9923a44a2fe2c7930587be297d6d4f8c09ca`（2025-09-01，PR #392 merge） |
-| Chipyard commit | `e02074414158c85059c1dcb231ff2f8941254b9a`（CHIPYARD.hash，clone 至 `/home/kukuman/NPU/chipyard`） |
+| Chipyard commit | `e02074414158c85059c1dcb231ff2f8941254b9a`（CHIPYARD.hash，clone 至 `../chipyard`） |
 | 子模块 | gemmini（置入 `chipyard/generators/gemmini`，同 commit）、rocket-chip、hardfloat、testchipip 等全部 init |
 
 ## 构建环境（W11 已完成）

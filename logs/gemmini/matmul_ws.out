@@ -1,2 +1,2 @@
 [UART] UART0 is here (stdin/stdout).
-- /home/kukuman/NPU/chipyard/sims/verilator/generated-src/chipyard.harness.TestHarness.GemminiRocketConfig/gen-collateral/TestDriver.v:158: Verilog $finish
+- ~/NPU/chipyard/sims/verilator/generated-src/chipyard.harness.TestHarness.GemminiRocketConfig/gen-collateral/TestDriver.v:158: Verilog $finish
